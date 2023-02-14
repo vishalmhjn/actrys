@@ -1,2 +1,2 @@
 # trasim-autocal
-A Python platform to automate calibration of traffic simulations
+A Python platform to help automate calibration of traffic simulations
