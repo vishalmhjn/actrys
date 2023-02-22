@@ -8,7 +8,6 @@ Copyright 2020-2023 Vishal Mahajan
 </p>
 
 ## Overview
-
 This repository contains code for:
 * Input/ Ouptut interfaces to call SUMO, initialize ad simulate the scenarios, and collect the output data.
 * Calibration components:
@@ -19,6 +18,21 @@ This repository contains code for:
 * Utilities
     * Preparing and processing SUMO input files such as network downloading, trip filtering, adding detectors, file format conversion
     * Plotting
+
+## Framework
+The platform implements a step-wise approach for sequential calibration of
+* Demand parameters or Origin-Destination (OD) flows
+* Supply parameters for a mesoscopic simulation
+
+To achieve this, following process is followed:
+* Bias-correction in OD matrix using one-shot heuristic
+* Bayesian optimization to fine-tune SPSA parameters using analytical or static assignment matrix approximated from the simulator
+* W-SPSA with ensembling techniques with cold and warm restarts
+* Bayesian optimization using supply calibration
+
+Currently, the platform can handle link based measures such as link traffic counts and link speeds in the calibration.
+
+## Execution
 
 <!-- ## Analytical or static simulator
 
