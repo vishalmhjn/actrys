@@ -47,9 +47,20 @@ This platform can calibrate two kinds of scenarios:
 * Observed sensor data such as link volumes or link speeds to be used as MOP
 
 ## Execution
+Following procedure for running <b>Black-box or dynamic simulation </b> scenarios:
+
+* First, [paths](src/core/paths.py) and [parameters](src/core/params.py) are to be specified. The platform has been tested on Ubuntu and OSX platform. It has not been tested on Windows where the Paths might need to be adapted
+
+* Then, the current working director should be changed to [src/core](src/core/) in the Command line interface
+
+* The Python file is the overall wrapper [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [munichmr.sh](src/wrapper/munichmr.sh)
+
 
 _todo_
 
+Following procedure for running <b>Analytical or static simulation </b> scenarios:
+
+_todo_
 <!-- ## Analytical or static simulator
 
 
