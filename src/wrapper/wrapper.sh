@@ -41,7 +41,7 @@ export only_bias_correction=${32}
 export bias_correction_method=${33}
 
 export OD_FILE_IDENTIFIER=OD
-export DEMAND_SOURCE=demand/v2
+export DEMAND_SOURCE=demand
 export DEMAND_INTERVAL=$interval
 export temp_scenario_name=$temp_folder_name
 

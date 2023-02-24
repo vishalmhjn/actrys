@@ -404,22 +404,6 @@ def objective_function_without_simulator(X,
             best_simulated_counts = simulated_counts.flatten()
             best_rmsn=rmsn
 
-        print(f"Weighted {estimator} {rmsn:.6f}, Count {estimator} {count_rmsn:.6f}")
-        # if rmsn < 0.10:
-        #     print("Success Achieved!!!")
-        #     fig, ax = plt.subplots(1,1,figsize=(10,6))
-        #     ax = utilities.plot_loss_curve(ax, res_dict, spsa_a, spsa_c)
-        #     plt.legend()
-        #     plt.show()
-        #     plt.close()
-
-        #     fig, ax = plt.subplots(3,2,figsize=(7,9))
-        #     ax[0,0].scatter(real_count, count_init, s=0.1)
-        #     ax[0,1].scatter(real_count, simulated_counts, s=0.1)
-        #     ax[1,1].scatter(X_true, estimated, s=0.1)
-        #     plt.tight_layout()
-        #     plt.show()
-        #     sys.exit()
     return rmsn
 
 def calibration_handler(obj_func,
@@ -454,7 +438,6 @@ def calibration_handler(obj_func,
                         bounds = bounds,
                         x0 = x0)
     # result = sf.bhop(path_args=(PATH_DEMAND, PATH_TRIPS))
-    print("===========  Optimization using "+ which_algo +" ===============")
     if which_algo=="spsa":
         result = sf.spsa(path_args=(path_demand, path_trips, x_true, 
                                     x_prior, true_counts, true_speeds),
@@ -517,7 +500,6 @@ def calibration_handler_out_of_loop(obj_func,
                         bounds = bounds,
                         x0 = x0)
     global which_algo
-    print("===========  Optimization using "+ which_algo +" ===============")
     if which_algo == "wspsa":
         global weight_counts, weight_od, weight_speed
         global weight_counts, weight_od, weight_speed
@@ -654,42 +636,12 @@ if __name__=="__main__":
                                 path_output_speeds = path_simulation_speeds,
                                 path_real_speeds = PATH_REAL_SPEED)
         ### Add predicted counts here
-        if which_algo=="wspsa":
-            if SCENARIO=="scenario_munich":
-                weight_file = "../../scenario_munich/weight_matrix.pickle"
-            elif SCENARIO=="san_francisco":
-                weight_file = "../../san_francisco/weight_matrix.pickle"
-            elif SCENARIO=="composite_scenario_munich":
-                det_counts_for_weights = ""
-                # weight_file = "../../composite_scenario_munich/wspsa/weight_matrix_rc_v4_thresh_True_synthetic_False_"+str(wspsa_thrshold)+"_binary_True.pickle"
-            elif SCENARIO=="msm_scenario_munich":
-                det_counts_for_weights = ""
-                # the reason for generating it again is that the some detectors in additional
-                # do not have the data and thus more count data when generating synthetically
-                # a better option is to generate it separately and save it.
-                # weight_file = "../../msm_scenario_munich/wspsa/synthetic_weight_matrix_real_counts_no_thresh_"+str(wspsa_thrshold)+".pickle"
-            elif SCENARIO=="demo_grid":
-                det_counts_for_weights = ""
-            elif SCENARIO=="demo_random":
-                det_counts_for_weights = ""
-                # weight_file = "../../demos/wspsa/weight_matrix_thresh_True_synthetic_True_"+str(wspsa_thrshold)+"_binary_True.pickle"
-                # assignment_file = "../../demos/wspsa/assignment_matrix.pickle"
-            else:
-                det_counts_for_weights = ""
-                # raise("Invalid Scenario")
+        det_counts_for_weights = ""
     else:	
-        if SCENARIO=="scenario_munich":
-            counts_file = "../../scenario_munich/true_counts/real_counts.csv"
-        elif SCENARIO=="msm_scenario_munich":
-            counts_file = "../../msm_scenario_munich/true_counts/real_counts_median.csv"
-        elif SCENARIO=="composite_scenario_munich":
-            det_counts_for_weights = "../../composite_scenario_munich/matchable_detectors.csv"
-            counts_file = "../../composite_scenario_munich/true_counts/real_counts_complete.csv"
-            speed_file = "../../composite_scenario_munich/true_speeds/dummy_edge_data_3600.csv"
-        elif SCENARIO=="san_francisco":
-            counts_file = "../../san_francisco/true_counts/true_counts.csv"
-        else:
-            raise("Invalid Scenario")
+        # path to real - observed data
+        det_counts_for_weights = ""
+        counts_file = ""
+        speed_file = ""
 
     if not synthetic_counts:
         df_real = pd.read_csv(counts_file)
@@ -749,28 +701,11 @@ if __name__=="__main__":
                                     threshold_val = wspsa_thrshold,
                                     binary_rounding = True)
 
-            # S = scipy.sparse.csr_matrix(X_OD)
-            # with open("../../siouxfalls/wspsa/x.pickle",'wb') as file:
-            #     pickle.dump(S, file)
-            # S = scipy.sparse.csr_matrix(A)
-            # with open("../../siouxfalls/wspsa/A.pickle",'wb') as file:
-            #     pickle.dump(S, file)
-            # S = scipy.sparse.csr_matrix(simulated_counts)
-            # with open("../../siouxfalls/wspsa/sc.pickle",'wb') as file:
-            #     pickle.dump(S, file)
-
-            # NOTE: We use speed and counts both for edges mentioned in the 
-            # additional file. We do not use all the edges in the network but only
-            # the ones in the additional file. Since the W is generated based on the additional file,  
-            # W is same for both the count and speed, so don't neeed to generate a 
-            # separate W matrix for mapping between OD and Speed/count links
-
             if which_algo=="wspsa":
                 assert W.shape[0] == len(X_OD), "Shapes of Weight matrix: "+ str(W.shape[0]) +" and OD matrix: "+ str(len(X_OD))+" are not equal"
                 assert W.shape[1] == len(true_counts), "Shapes of Weight matrix: "+ str(W.shape[1]) +" and Count matrix: "+ str(len(true_counts))+" are not equal"
                 assert W.shape[1] == len(true_speeds), "Shapes of Weight matrix: "+ str(W.shape[1]) +" and Speed matrix: "+ str(len(true_speeds))+" are not equal"
 
-            print(bias_correction_method)
             if weight_counts!=0:
                 if bias_correction_method =="naive":
                     estimated_bias_factor = np.sum(sim_init_counts)/np.sum(count_init)
@@ -786,7 +721,6 @@ if __name__=="__main__":
                 domain_upper_bound = (2/estimated_bias_factor) - domain_lower_bound
                 # assuming spillback times are not very long such as demand of zones
                 # is spilling onto the next calibration interval
-                print(estimated_bias_factor)
                 if correction_heuristic == False:
                     corrected_od = init
                 else:
@@ -935,9 +869,7 @@ if __name__=="__main__":
                             init_iter = copy.deepcopy(best_od)
 
                     X_prior = copy.deepcopy(init_iter)
-                    # X_prior = np.array(add_noise(X_OD, int(noise_prior)/100, mu=1)) 
-                    # X_prior = np.where(X_prior<0, 0, X_prior)
-
+                    
                     noised_solution = np.array(add_noise(init_iter, int(exploration_noise)/100, mu=1))
                     init_iter = np.where(noised_solution<0, 0, noised_solution)
 
@@ -999,8 +931,6 @@ if __name__=="__main__":
                                 assert W_out.shape[0] == len(X_OD), "Shapes of Weight matrix: "+ str(W_out.shape[0]) +" and OD matrix: "+ str(len(X_OD))+" are not equal"
                                 assert W_out.shape[1] == len(true_counts), "Shapes of Weight matrix: "+ str(W_out.shape[1]) +" and Count matrix: "+ str(len(true_counts))+" are not equal"
                                 assert W_out.shape[1] == len(true_speeds), "Shapes of Weight matrix: "+ str(W_out.shape[1]) +" and Count matrix: "+ str(len(true_speeds))+" are not equal"
-                            print(spsa_a_out_sim)
-                            print(spsa_c_out_sim)
 
                         if sim_in_loop:
                             best_rmsn = 10000000
