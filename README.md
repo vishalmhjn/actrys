@@ -62,11 +62,9 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 	cd src/wrapper
 	```
 
-* The Python file is the overall wrapper [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [munichmr.sh](src/wrapper/munichmr.sh)
-
-* 	run the following in terminal:
+* The Python file is the overall wrapper [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [wrapper.sh](src/wrapper/wrapper.sh). run the following in terminal:
 	```sh
-	python run_sim.py
+	python run_sim.py munich
 	```
 
 Following procedure for running <b>Analytical or static simulation </b> scenarios:
