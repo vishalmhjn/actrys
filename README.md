@@ -51,12 +51,23 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 
 * First, [paths](src/core/paths.py) and [parameters](src/core/params.py) are to be specified. The platform has been tested on Ubuntu and OSX platform. It has not been tested on Windows where the Paths might need to be adapted
 
-* Then, the current working director should be changed to [src/core](src/core/) in the Command line interface
+* Set path to the SUMO folder with SUMO_HOME variable. for example in OSX, it is generally stored at following path for SUMO version 1.10.0. You can check the this [link](https://sumo.dlr.de/docs/Basics/Basic_Computer_Skills.html#sumo_home) for more details.
+
+	```sh
+	export SUMO_HOME="/usr/local/Cellar/sumo/1.10.0/share/sumo"
+	```
+
+* Then, the current working director should be changed to [src/core](src/wrapper/) in the Command line interface. You can set this from home directory by 
+	```sh
+	cd src/wrapper
+	```
 
 * The Python file is the overall wrapper [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [munichmr.sh](src/wrapper/munichmr.sh)
 
-
-_todo_
+* 	run the following in terminal:
+	```sh
+	python run_sim.py
+	```
 
 Following procedure for running <b>Analytical or static simulation </b> scenarios:
 
