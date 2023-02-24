@@ -40,8 +40,8 @@ export momentum_beta=${28}
 export interval=${29}
 export only_bias_correction=${30}
 
-export OD_FILE_IDENTIFIER=MR
-export DEMAND_SOURCE=demand/
+export OD_FILE_IDENTIFIER=OD
+export DEMAND_SOURCE=demand/v2
 export DEMAND_INTERVAL=$interval
 export temp_scenario_name=$temp_folder_name
 
@@ -61,7 +61,7 @@ export PATH_REAL_SPEED=../../$SCENARIO/$temp_scenario_name/real_edge_data_3600.c
 
 export TOD_START=7
 export TOD_END=10
-python main.py
+python ../core/main.py
 
         
 
