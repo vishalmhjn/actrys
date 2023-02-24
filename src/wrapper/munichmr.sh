@@ -12,8 +12,6 @@ export spsa_a=$6
 export spsa_c=$7
 export spsa_a_out_sim=$8
 export spsa_c_out_sim=$9
-
-
 export spsa_reps=${10}
 
 export sim_in_loop=${11}
@@ -22,23 +20,25 @@ export n_iterations=${13}
 export sim_in_iterations=${14}
 export sim_out_iterations=${15}
 
-
 export which_algo=${16}
 export wspsa_thrshold=${17}
 export calibrate_supply=${18}
-export estimator=${19}
+export calibrate_demand=${19}
+export set_spa=${20}
+export estimator=${21}
 
-export SCENARIO=${20}
-export weight_counts=${21}
-export weight_od=${22}
-export weight_speed=${23}
-export bagging_run=${24}
-export count_noise_param=${25}
-export heuristic=${26}
-export auto_tune_spsa=${27}
-export momentum_beta=${28}
-export interval=${29}
-export only_bias_correction=${30}
+export SCENARIO=${22}
+export weight_counts=${23}
+export weight_od=${24}
+export weight_speed=${25}
+export bagging_run=${26}
+export count_noise_param=${27}
+export heuristic=${28}
+export auto_tune_spsa=${29}
+export momentum_beta=${30}
+export interval=${31}
+export only_bias_correction=${32}
+export bias_correction_method=${33}
 
 export OD_FILE_IDENTIFIER=OD
 export DEMAND_SOURCE=demand/v2

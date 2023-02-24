@@ -28,7 +28,7 @@ To achieve this, following process is followed:
 * Bias-correction in OD matrix using one-shot heuristic
 * Bayesian optimization to fine-tune SPSA parameters using analytical or static assignment matrix approximated from the simulator
 * W-SPSA with ensembling techniques with cold and warm restarts
-* Bayesian optimization using supply calibration
+* Supply calibration using Bayesian optimization
 
 Currently, the platform can handle link based Measures of Performance (MOP) such as link traffic counts and link speeds in the calibration.
 
@@ -85,7 +85,6 @@ Mahajan, V., Cantelmo, G., and Antoniou, C, One-shot heuristic and ensembling fo
 ## Acknowledgements
 1. SUMO: https://github.com/eclipse/sumo
 2. Noisyopt library: https://github.com/andim/noisyopt
-
 
 ## Disclaimer
 The codebase is being improved for readability and execution. Please excuse the prototypical nature of the platform.
