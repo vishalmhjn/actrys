@@ -41,7 +41,7 @@ for i, (weight_profiles, count_noise) in enumerate(zip([
                         wspsa {wspsa_threshold} \
                         False \
                         {estimator} \
-                        munichmr/ \
+                        munich \
                         {weight_profiles[0]} \
                         {weight_profiles[1]} \
                         {weight_profiles[2]} \
