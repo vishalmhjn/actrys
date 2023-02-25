@@ -676,11 +676,11 @@ if __name__=="__main__":
 
             if seq==0:
                 X_OD = np.array(OD_txt_to_dataframe(path = PATH_DEMAND))
-                X_base_true = X_OD.copy()
+                X_base_true = copy.deepcopy(X_OD)
                 # add artifical noise and bias to the  demand matrix which is zero and 1 in this case
                 initial_solution = np.array(add_noise(X_OD, int(noise_param)/100, mu=bias_param))
                 init = np.where(initial_solution<0, 0, initial_solution)
-                init_seq = init.copy()
+                init_seq = copy.deepcopy(init)
             else:
                 X_OD = best_od
                 # add artifical noise and bias to the  demand matrix which is zero and 1 in this case
@@ -753,7 +753,7 @@ if __name__=="__main__":
 
                 rmsn_c = gof_eval(count_init, sim_corrected_counts, estimator=estimator)
                 rmsn_s = gof_eval(speeds_init, sim_corrected_speeds, estimator=estimator)
-                rmsn_od = gof_eval(X_OD, corrected_od, estimator=estimator)
+                rmsn_od = gof_eval(X_base_true, corrected_od, estimator=estimator)
 
                 res_dict["count_val"].append(rmsn_c)
                 res_dict["speed_val"].append(rmsn_s)
@@ -770,8 +770,8 @@ if __name__=="__main__":
                                             'simulated': sim_corrected_speeds.flatten()})
                 save_speeds.to_csv(pre_string+"/"+"speeds.csv")
 
-                save_od = pd.DataFrame({"real": X_OD.flatten(), 
-                                        'initial': init.flatten(),
+                save_od = pd.DataFrame({"real": X_base_true.flatten(), 
+                                        'initial': init_seq.flatten(),
                                         'simulated': corrected_od.flatten()})
                 save_od.to_csv(pre_string+"/mean_"+"od.csv", index=None)
         
@@ -887,7 +887,7 @@ if __name__=="__main__":
                             ## with simulation out-of-loop
                             res = 	calibration_handler_out_of_loop(objective_function_without_simulator,
                                                                     init_iter,
-                                                                    X_OD,
+                                                                    X_base_true,
                                                                     X_prior,
                                                                     A,
                                                                     W_out,
@@ -942,7 +942,7 @@ if __name__=="__main__":
                             ### with simulation in loop
                             res = 	calibration_handler(objective_function,
                                                         init_iter,
-                                                        X_OD,
+                                                        X_base_true,
                                                         X_prior,
                                                         W_in,
                                                         true_counts,
@@ -984,13 +984,13 @@ if __name__=="__main__":
                                 assert W_in.shape[1] == len(true_counts), "Shapes of Weight matrix: "+ str(W_in.shape[1]) +" and Count matrix: "+ str(len(true_counts))+" are not equal"
                                 assert W_in.shape[1] == len(true_speeds), "Shapes of Weight matrix: "+ str(W_in.shape[1]) +" and Count matrix: "+ str(len(true_speeds))+" are not equal"
                     od_bag_list.append(best_od)
-                    save_od = pd.DataFrame({"real": X_OD, 'simulated': best_od.flatten()})
+                    save_od = pd.DataFrame({"real": X_base_true, 'simulated': best_od.flatten()})
                     save_od.to_csv(pre_string+"/"+str(bagging)+"_"+"od.csv", index=None)
             
                 od_mean = np.mean(np.array(od_bag_list), axis=0).astype(int)
                 best_od = copy.deepcopy(od_mean)
                 
-                rmsn_od = gof_eval(X_OD, od_mean, estimator=estimator)
+                rmsn_od = gof_eval(X_base_true, od_mean, estimator=estimator)
                 print("Final bagged OD error "+ estimator+ ": "+ str(np.round(rmsn_od, 4)))
 
                 _, sim_final_counts,\
@@ -1010,8 +1010,8 @@ if __name__=="__main__":
                                             'initial': sim_init_speeds.flatten(),
                                             'simulated': sim_final_speeds.flatten()})
 
-                save_od = pd.DataFrame({"real": X_OD.flatten(), 
-                                        'initial': init.flatten(),
+                save_od = pd.DataFrame({"real": X_base_true.flatten(), 
+                                        'initial': init_seq.flatten(),
                                         'simulated': od_mean.flatten()})
 
                 save_counts.to_csv(pre_string+"/mean_"+str(seq)+"_"+str(bagging_run)+"_"+"counts.csv", index=None)
@@ -1119,7 +1119,7 @@ if __name__=="__main__":
         
         fig, ax = plt.subplots(3,2,figsize=(7,9))
 
-        fig, ax = utilities.plot_45_degree_plots(fig, ax, X_OD, best_od, init,
+        fig, ax = utilities.plot_45_degree_plots(fig, ax, X_base_true, best_od, init_seq,
                                                 weight_counts, weight_od, weight_speed,
                                                 true_counts, best_simulated_counts, sim_init_counts,
                                                 true_speeds, best_simulated_speeds, sim_init_speeds, 
