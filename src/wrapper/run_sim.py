@@ -6,7 +6,7 @@ scenario = sys.argv[1]
 spsa_a = 0.00001
 spsa_c = .01
 bias = 0.6
-noise = 40
+noise = 20
 spsa_reps = 1
 num_iterations = 1
 wspsa_threshold = .01
@@ -19,7 +19,7 @@ sim_out_iterations = 1
 demand_interval = 3600
 bagging_runs = 3
 calibrate_demand = True
-calibrate_supply = True
+calibrate_supply = False
 set_spa = False
 
 momentum_beta=0.3

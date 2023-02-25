@@ -676,9 +676,11 @@ if __name__=="__main__":
 
             if seq==0:
                 X_OD = np.array(OD_txt_to_dataframe(path = PATH_DEMAND))
+                X_base_true = X_OD.copy()
                 # add artifical noise and bias to the  demand matrix which is zero and 1 in this case
                 initial_solution = np.array(add_noise(X_OD, int(noise_param)/100, mu=bias_param))
                 init = np.where(initial_solution<0, 0, initial_solution)
+                init_seq = init.copy()
             else:
                 X_OD = best_od
                 # add artifical noise and bias to the  demand matrix which is zero and 1 in this case
@@ -732,7 +734,7 @@ if __name__=="__main__":
 
             rmsn_c = gof_eval(count_init, sim_init_counts, estimator=estimator)
             rmsn_s = gof_eval(speeds_init, sim_init_speeds, estimator=estimator)
-            rmsn_od = gof_eval(X_OD, init, estimator=estimator)
+            rmsn_od = gof_eval(X_base_true, init, estimator=estimator)
 
             if only_bias_correction:
                 res_dict["count_val"].append(rmsn_c)
@@ -788,7 +790,7 @@ if __name__=="__main__":
                 else:
                     BOUNDS = np.array([[domain_lower_bound*i, domain_upper_bound[i]*i] for i in X_domain])
 
-                rmsn_od_bias_corrected = gof_eval(X_OD, corrected_od, estimator=estimator)
+                rmsn_od_bias_corrected = gof_eval(X_base_true, corrected_od, estimator=estimator)
 
                 # When using synthetic demand, and counts, this is equal to 0
                 print("B-N Weighted Count "+ estimator+ ": "+ str(np.round(rmsn_c*weight_counts, 4)))
@@ -1150,7 +1152,7 @@ if __name__=="__main__":
 
         fig, ax = plt.subplots(3,2,figsize=(7,9))
 
-        fig, ax = utilities.plot_45_degree_plots(fig, ax, X_OD, od_mean, init,
+        fig, ax = utilities.plot_45_degree_plots(fig, ax, X_base_true, od_mean, init_seq,
                                                 weight_counts, weight_od, weight_speed,
                                                 true_counts, sim_final_counts.flatten(), sim_init_counts,
                                                 true_speeds, sim_final_speeds, sim_init_speeds, 
