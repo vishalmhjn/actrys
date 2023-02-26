@@ -57,7 +57,7 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 	export SUMO_HOME="/usr/local/Cellar/sumo/1.10.0/share/sumo"
 	```
 
-* Then, the current working director should be changed to [src/core](src/wrapper/) in the Command line interface. You can set this from home directory by 
+* Then, the current working director should be changed to [src/wrapper](src/wrapper/) in the Command line interface. You can set this from home directory by 
 	```sh
 	cd src/wrapper
 	```
@@ -70,7 +70,7 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 
 Following procedure for running <b>Analytical or static simulation </b> scenarios. 
 
-* Set the current working director to [src/core](src/wrapper/) in the Command line interface, as above.
+* Set the current working director to [src/wrapper](src/wrapper/) in the Command line interface, as above.
 
 * The Python file is the overall wrapper [run_analytical_sim.py](src/wrapper/run_analytical_sim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
 
