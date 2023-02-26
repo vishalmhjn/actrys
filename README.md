@@ -69,11 +69,9 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 
 Following procedure for running <b>Analytical or static simulation </b> scenarios:
 
-_todo_
-<!-- ## Analytical or static simulator
-
-
-## SUMO simulator -->
+	```sh
+	python run_analytical_sim.py
+	```
 
 ## Citation
 If you use these codes in your work, kindly cite the following working paper:

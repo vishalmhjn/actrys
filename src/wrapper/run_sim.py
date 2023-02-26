@@ -19,7 +19,7 @@ sim_out_iterations = 1
 demand_interval = 3600
 bagging_runs = 3
 calibrate_demand = True
-calibrate_supply = False
+calibrate_supply = True
 set_spa = False
 
 momentum_beta=0.3

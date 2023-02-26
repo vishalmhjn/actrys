@@ -5,16 +5,12 @@ import json
 import matplotlib.pyplot as plt
 import sys
 import os
-import time
 import pandas as pd
-import seaborn as sns
 
 from gof import gof_eval, squared_deviation
-from optimizer import SolutionFinder, MyBounds
-from optimizer import sys_id
+from optimizer import SolutionFinder
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sys import getsizeof
 import utilities
 
 from bayes_opt import BayesianOptimization
@@ -23,27 +19,23 @@ from bayes_opt.event import Events
 from bayes_opt import SequentialDomainReductionTransformer
 from bayes_opt.util import load_logs
 
-# from guppy import hpy; h=hpy()
-
-# make classs structure for conducting experiments
-
 from synthetic_experiment import synthetic_scenario_orchestrator, synthetic_simulation
 
-temp_folder_name = sys.argv[1] #"spsa"
+temp_folder_name = sys.argv[1]
 run_scenario = sys.argv[2]
 noise_param = int(float(sys.argv[3]))
-bias_param = float(sys.argv[4]) #sys.argv[3]
-spsa_a= float(sys.argv[5]) #int(sys.argv[4])
-spsa_c = float(sys.argv[6]) #int(sys.argv[5])
-spsa_reps = int(sys.argv[7]) #int(sys.argv[6])
-n_iterations = int(sys.argv[8]) #int(sys.argv[7])
+bias_param = float(sys.argv[4])
+spsa_a= float(sys.argv[5])
+spsa_c = float(sys.argv[6])
+spsa_reps = int(sys.argv[7])
+n_iterations = int(sys.argv[8])
 which_algo = sys.argv[9]
 file_idenfier= sys.argv[10]
 bagging_run = int(sys.argv[11])
 beta_momentum_param = float(sys.argv[12])
 count_noise = int(sys.argv[13])
 weight_counts = float(sys.argv[14])
-# dont give ODs weight if doing synthetic experiments since the estimates are biased and nosiy
+
 weight_od = float(sys.argv[15])
 weight_speed = float(sys.argv[16])
 spsa_autotune = eval(sys.argv[17])
@@ -51,7 +43,6 @@ correction_heuristic = eval(sys.argv[18])
 only_bias_correction = eval(sys.argv[19])
 bias_correction_method = sys.argv[20]
 
-# weight_speed = 0 if (1-weight_counts-weight_od) < 1e-2 else (1-weight_counts-weight_od)
 
 best_od = []
 estimator = "wmape"
@@ -119,7 +110,6 @@ def objective_function(X,
     simulated_counts = simulated_counts.reshape(-1, 1)
     simulated_speeds = simulated_speeds.reshape(-1, 1)
 
-    # equal weights for counts and demand
     global weight_counts, weight_od, weight_speed
 
     if weighted == False:
@@ -135,10 +125,6 @@ def objective_function(X,
         else:
             sd_counts = np.array([])
         if weight_od!=0:
-            ### WARNING: cannot use true ODs here as they are assumed to be unknown
-            ### Either use the biased ODs (initial estimate) or ignore them. In main scenario
-            ### you can use them depending on the confidence
-            # raise("Cannot use True ODs here")
             sd_od = weight_od * squared_deviation(X_prior, X)
         else:
             sd_od = np.array([])
@@ -170,19 +156,12 @@ def objective_function(X,
                 else:
                     raise("All weights cannot be zero")
     
-    # pd.DataFrame(X_true).to_csv("../../data/true.csv")
-    # pd.DataFrame(X).to_csv("../../data/simulated.csv")
-
     if eval_rmsn==True:
         global res_dict
-        # stochastic averaging
         if len(res_dict["od_val"])>1:
             if np.std(res_dict["od_val"]) < 0.10:
                 global stochastic_solution_counter
-                # stochastic_solutions = pd.DataFrame({"simulated": X.flatten()})
-                # stochastic_solutions.to_csv(pre_string+"/interim_"+str(stochastic_solution_counter)+"_"+"od.csv", index=None)
                 stochastic_solution_counter+=1
-        #### when eval_rmsn is true, rmsn returns a float instead of a list
         res_dict["f_val"].append(rmsn)
         res_dict["count_val"].append(count_rmsn)
         res_dict["od_val"].append(od_rmsn)
@@ -191,31 +170,6 @@ def objective_function(X,
         if rmsn<best_rmsn:
             best_od = X.copy()
         print(f"Weighted {estimator} {rmsn:.6f}, Count {estimator} {count_rmsn:.6f}", end="\r")
-        
-        # if rmsn < 0.005:
-        #     fig, ax = plt.subplots(1,1,figsize=(10,6))
-        #     ax = utilities.plot_loss_curve(ax, res_dict, spsa_a, spsa_c)
-        #     plt.savefig("../../images/loss_"+str(num_od)+"_"+str(num_detectors)+"_"+\
-        #             str(n_iterations)+"_"+str(weight_od)+"_"+str(weight_counts)+"_"+\
-        #                 str(weight_speed)+"_"+str(which_algo)+file_idenfier+"_"+".png", dpi=300)
-        #     plt.legend()
-        #     plt.close()
-        #     best_rmsn = rmsn
-
-        #     fig, ax = plt.subplots(3,2,figsize=(7,9))
-
-        #     fig, ax = utilities.plot_45_degree_plots(fig, ax, X_true, estimated, init,
-        #                                             weight_counts, weight_od, weight_speed,
-        #                                             measured_counts, simulated_counts, count_init,
-        #                                             real_speed, simulated_speeds, speed_init, 
-        #                                             spsa_a, spsa_c, noise_param, bias_param)
-
-        #     plt.tight_layout()
-        #     plt.savefig("../../images/results_"+str(num_od)+"_"+str(num_detectors)+"_"+\
-        #             str(n_iterations)+"_"+str(weight_od)+"_"+str(weight_counts)+"_"+\
-        #                 str(weight_speed)+"_"+str(which_algo)+file_idenfier+"_"+".png", dpi=300)
-        #     sys.exit()
-
 
     return rmsn
 
@@ -246,7 +200,6 @@ def calibration_handler(obj_func,
     sf = SolutionFinder(obj_func,
                         bounds = bounds,
                         x0 = x0)
-    # which_algo = "spsa"
     global which_algo
     print("===========  Optimization using "+ which_algo +" ===============")
     if which_algo=="spsa":
@@ -287,9 +240,6 @@ def calibration_handler(obj_func,
         if weight_counts!=0:
             if weight_od!=0:
                 if weight_speed!=0:
-                    ###### Warning: Change the dtype of the weight array to float32 (4 bytes) 
-                    # if you want the correlation to be float values between 0 and 1. Now it is 
-                    # configured to int8 which takes 1 byte of space
                     weight_wspsa = np.zeros((W.shape[0], W.shape[1]+W.shape[0]+W.shape[1]), dtype='int8')
                     weight_wspsa[:, :W.shape[1]] = np.where(W>0, 1, 0) 
                     weight_wspsa[:, W.shape[1]:W.shape[1]+W.shape[0]] = np.eye(W.shape[0])
@@ -318,18 +268,6 @@ def calibration_handler(obj_func,
                     weight_wspsa = np.where(W>0, 1, 0).astype('int8')
                 else:
                     raise("All the weights cannot be zero")
-        
-        # print(weight_wspsa.size)
-        # print("Memory of Weights W-SPSA matrix %0.2f" %(getsizeof(weight_wspsa)/10**9))
-        # print(weight_wspsa.dtype)
-
-        # print(W.size)
-        # print("Memory of Assignment matrix %0.2f" %(getsizeof(W)/10**9))
-        # print(W.dtype)
-
-            # plt.imshow(w_matrix, cmap='hot', interpolation='nearest')
-            # plt.tight_layout()
-            # plt.savefig("../../images/wspsa.png", dpi=300)
 
         result = sf.w_spsa(weights_wspsa = weight_wspsa,
                             path_args=(x_true, x_prior, W, orig_count, orig_speed, t_state, interval, num_detectors),
@@ -376,7 +314,6 @@ def spsa_tune_function(log_spsa_a,
     simulated_counts = simulated_counts.reshape(-1, 1)
     simulated_speeds = simulated_speeds.reshape(-1, 1)
 
-    # equal weights for counts and demand
     global weight_counts, weight_od, weight_speed
     rmsn = weight_counts * gof_eval(measured_counts.flatten(), simulated_counts.flatten(), estimator=estimator) \
            + weight_od * gof_eval(X_OD, X, estimator=estimator)
@@ -386,12 +323,6 @@ def spsa_tune_function(log_spsa_a,
 if __name__=="__main__":
 
     execute_scenario = eval(run_scenario)
-
-    # considerations
-    # the speeds might be zero for high size of the OD and given network-count correlation
-    # so change some parameters to maintain consistency
-    # e.g., when increaseing od size, reduce the network_correlation or reduce the number of max trips between zones,
-
     num_od = 50 #50
     num_od_pairs = num_od**2
     num_detectors = 500 #1000 #600
@@ -411,13 +342,6 @@ if __name__=="__main__":
                                                                     od_distribution = "beta",
                                                                     network_correlation=network_correlation
                                                                     )
-    # try:
-    #     os.mkdir("../../synthetic/"+temp_folder_name)
-    # except FileExistsError:
-    #     pass
-    # np.save('../../synthetic/'+temp_folder_name+'/OD'+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+'.npy', OD)
-    # np.save('../../synthetic/'+temp_folder_name+'/assignment'+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+'.npy', W)
-    # np.save('../../synthetic/'+temp_folder_name+'/count'+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+'.npy', sim)
 
     real_count = np.array([int(i) for i in  sim]).reshape(-1,1)
     real_speed = np.array([int(i) for i in  speed]).reshape(-1,1)
@@ -425,18 +349,12 @@ if __name__=="__main__":
     measured_counts = np.array(add_noise(real_count, int(count_noise)/100, mu=1)).reshape(-1,1)
 
     shape = OD.shape
-    # print(shape)
+
     X_OD = OD.T.flatten()
 
     initial_solution = np.array(add_noise(X_OD, int(noise_param)/100, mu=bias_param))
-
-    # noise_prior = 20
-    # print("Added noise in prior = "+str(noise_prior))
     
     init = np.array(np.where(initial_solution<0, 0, initial_solution))
-
-    # Using X-prior as initial or disturbed values, so no information leakage
-    # X_prior = init #np.array(add_noise(X_OD, noise_prior/100, mu=1))
 
     initial_counts, initial_speed = synthetic_simulation(init, W, t_state, interval, num_detectors)
     initial_counts = initial_counts.reshape(-1, 1)
@@ -456,8 +374,7 @@ if __name__=="__main__":
                 raise("Please enter a valid bias correction method")
             domain_lower_bound = 0.1
             domain_upper_bound = (2/estimated_bias_factor) - domain_lower_bound
-            # assuming spillback times are not very long such as demand of zones
-            # is spilling onto the next calibration interval
+
             print(estimated_bias_factor)
             corrected_od = init/estimated_bias_factor 
             
@@ -523,12 +440,6 @@ if __name__=="__main__":
     else:
 
         rmsn_od_bias_corrected = gof_eval(X_OD, corrected_od, estimator=estimator)
-
-        # # When using synthetic demand, and counts, this is equal to 0
-        # print("B-N Weighted Count "+ estimator+ ": "+ str(np.round(rmsn_c*weight_counts, 4)))
-        # print("B-N Count "+ estimator+ ": "+ str(rmsn_c))
-        # # print("B-N Speed "+ estimator+ ": "+ str(rmsn_s))
-        # print("B-N OD "+ estimator+ ": "+ str(rmsn_od))
         
         print("B-N Corrected OD "+ estimator+ ": "+ str(rmsn_od_bias_corrected))
 
@@ -579,8 +490,8 @@ if __name__=="__main__":
                 print(spsa_a, spsa_c)
         
         SPA = False
-        # print(h.heap())
-        for beta_momentum in [beta_momentum_param]: #np.linspace(0,10,11)/10:	
+
+        for beta_momentum in [beta_momentum_param]:	
             od_bag_list = []
 
             for bagging in range(0, bagging_run):
@@ -614,8 +525,6 @@ if __name__=="__main__":
                                             spsa_a,
                                             spsa_c,
                                             bounds= BOUNDS)
-                                            # bounds= np.array([[domain_lower_bound*i, domain_upper_bound*i] for i in X_prior]))
-                                            # bounds= np.array([[0, 3000] for i in X_prior]))
                 fig, ax = plt.subplots(3,2,figsize=(7,9))
 
                 fig, ax = utilities.plot_45_degree_plots(fig, ax, X_OD, best_od, init,
@@ -701,9 +610,5 @@ if __name__=="__main__":
                                         ])
 
                 with open(pre_string+'/results_'+str(beta_momentum)+timestr+'.json', 'w') as fp:
-                        # print(res_dict)
                         json.dump(res_dict, fp)	
 
-    # python synthetic_calibrator.py temp True 15 0.5 0.08 0.05 1 100 wspsa error_check
-    # python synthetic_calibrator.py temp True 15 0.5 0.09 .1 1 200 wspsa error_check
-    # python synthetic_calibrator.py temp_sens_momentum True 15 0.5 1.5 0.1 1 100 wspsa moentum_sens 5
