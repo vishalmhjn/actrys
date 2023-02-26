@@ -62,17 +62,24 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 	cd src/wrapper
 	```
 
-* The Python file is the overall wrapper [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [wrapper.sh](src/wrapper/wrapper.sh). run the following in terminal:
+* The Python file is the overall wrapper [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [wrapper.sh](src/wrapper/wrapper.sh). Run the following in terminal:
 	```sh
 	python run_sim.py munich
 	```
+* Outputs are stored in [munich](munich/) folder
 
-Following procedure for running <b>Analytical or static simulation </b> scenarios:
+Following procedure for running <b>Analytical or static simulation </b> scenarios. 
 
+* Set the current working director to [src/core](src/wrapper/) in the Command line interface, as above.
+
+* The Python file is the overall wrapper [run_analytical_sim.py](src/wrapper/run_analytical_sim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
+
+* Run the following in terminal:
 	```sh
 	python run_analytical_sim.py
 	```
 
+* Outputs are stored in [synthetic_sims](synthetic_sims/) folder
 ## Citation
 If you use these codes in your work, kindly cite the following working paper:
 
