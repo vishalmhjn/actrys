@@ -265,7 +265,7 @@ def objective_function(X,
         if len(res_dict["od_val"])>1:
             if np.std(res_dict["od_val"]) < 0.10:
                 global stochastic_solution_counter
-                stochastic_solutions = pd.DataFrame({"simulated": X.flatten()})
+                stochastic_solutions = pd.DataFrame({"real": X_true.flatten(),"simulated": X.flatten()})
                 stochastic_solutions.to_csv(pre_string+"/interim_"+str(stochastic_solution_counter)+"_"+"od.csv", index=None)
                 save_counts = pd.DataFrame({"real": count_init.flatten(), 
                                             'simulated': simulated_counts.flatten()})

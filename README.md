@@ -46,6 +46,24 @@ This platform can calibrate two kinds of scenarios:
 * Traffic Analysis Zone file: Mapping between origin-destination zones and network edges
 * Observed sensor data such as link volumes or link speeds to be used as MOP
 
+## Requirements
+* The framework has been tested on __SUMO 1.13.0__ and __Python 3.8__ on both Ubuntu 18.04 and macOS 13.2. You should create a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-virtualenv) using
+	```sh
+	cd 
+	python3 -m venv actrys
+	```
+* Then activate the virtual environment using
+	```sh
+	source ~/actrys/bin/activate
+	```
+* Make the github repository your parent directory:
+	```sh
+	cd path/to/your/github/repository
+	```
+* Install the Python [requirements](requirements.txt) using:
+	```sh
+	pip install -r requirements.txt
+	```
 ## Execution
 Following procedure for running <b>Black-box or dynamic simulation </b> scenarios:
 

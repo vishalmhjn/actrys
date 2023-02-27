@@ -1,7 +1,6 @@
 #### To generate the weight matrix for W-SPSA on the fly
 
 import pandas as pd
-from collections import Counter
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,10 +9,6 @@ import pickle
 import subprocess
 import sys
 import os
-from dotenv import load_dotenv
-
-## To load environment variables consistent  across scenarios
-load_dotenv()
 
 from scenario_generator import TOD_START, TOD_END, \
                                 WARM_UP_PERIOD, COOL_DOWN_PERIOD,\
