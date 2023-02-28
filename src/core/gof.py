@@ -65,40 +65,10 @@ def squared_deviation(data, data_simulated, which_metric="sq_smape"):
     '''Squared deviation for use in W-SPSA algorithm'''
     
     assert data.shape == data_simulated.shape
-    ### Mean Squared Normalized Error: Almost Normalizing MSE reduces the noise the 
-    ### final estimates. Some formulations can induce noise the final OD estimates:
-    # second preferred one: induces small noise in small ODs but eliminates noise in large ODs
-    # diff = ((data - data_simulated)**2)/(np.median(data))
-
-    # preferred one using mean instead of median
-    # learning rate needs to be higher here
-    # diff = ((data - data_simulated)**2)/(np.mean(data))
-
-    # Symmetric mean squared percentage error
-    # multiplyting the SMAPE with the mean of data to avoid vanishing gradients
-    # could we multiply instead with the cluster wise mean of the data
     if which_metric == "sq_smape":
-        # pass
-        # skip absolute as per original w-spsa implementation
         diff = (data + 1e-11) * (data - data_simulated)**2/(0.5 * np.abs(data + data_simulated + 1e-8))
-
-        # diff = 0.3 * np.abs(data - data_simulated - np.mean(data - data_simulated )) \
-        #     +  0.3 * np.mean((data - data_simulated )**2) \
-        #     + 0.3 * (data + 1e-11) * (data - data_simulated)**2/(0.5 * np.abs(data + data_simulated + 1e-8))
-
-
-
-        # diff = (np.abs(data - data_simulated))
     elif which_metric == "composite":
         pass
-
-    # diff = ((data - data_simulated)**2)/(len(data))
-
-    # induces constant noise in ODs of almost  all sizes
-    # diff = ((data - data_simulated)**2)/(data+1)
-    
-    # induces noise and it does not corrects bias in the OD estimates well
-    # diff = np.sqrt((data - data_simulated)**2/len(data))
     return diff
 
 if __name__=="__main__":

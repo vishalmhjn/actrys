@@ -14,8 +14,7 @@ def create_dummy_OD(num_taz,
                     TOD_END, 
                     interval=1, 
                     lower_limit_od = 0, 
-                    upper_limit_od = 100, # this is reasonable as trips lie between 100 for 15 minute intervals
-                    # change if interval is changed by a similar factor
+                    upper_limit_od = 100,
                     od_distribution = "normal",
                     upper_limit_temporal_noise=0.1
                     ):
@@ -63,12 +62,8 @@ def create_dummy_OD(num_taz,
     TOD = np.arange(TOD_START, TOD_END, interval).reshape(-1,1)
 
     _ , temporal_model = temporal_kernel(x, y, interval)
-    # print(demand_shape)
 
     demand_shape = temporal_model.predict(TOD, return_std=True)[0]
-
-    # plt.plot(np.array(demand_shape).flatten())
-    # plt.show()
 
     OD_vector = np.zeros((num_taz**2, num_intervals), dtype="float32")
 
@@ -306,19 +301,6 @@ def synthetic_scenario_orchestrator(num_od,
 
 if __name__ == "__main__":
 
-    SMALL_SIZE = 8
-    MEDIUM_SIZE = 8
-    BIGGER_SIZE = 8
-    # TODO add travel times or speed to the synthetic experiment
-    # TODO how to make the OD matrix sparse after applicaton of temporal noise
-
-    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
     interval = 0.25
     num_detectors = 50
@@ -327,8 +309,6 @@ if __name__ == "__main__":
     TOD_E= 24
 
     plot=True
-
-    # OD = create_dummy_OD(10,5,10, interval)
 
     OD, W, counts, speed, _ = synthetic_scenario_orchestrator(num_od,
                                                     TOD_S,
@@ -340,10 +320,6 @@ if __name__ == "__main__":
                                                     od_distribution = "beta")
     counts = counts.reshape(-1, num_detectors).T
     
-    # pd.DataFrame(OD).to_csv("../../synthetic/od.csv", index=None)
-    # pd.DataFrame(counts).to_csv("../../synthetic/count_test.csv", index=None)
-    # pd.DataFrame(W).to_csv("../../synthetic/assign_test.csv", index=None)
-
     if plot:
         fig, ax = plt.subplots(1,1, figsize=(10,5))
         plt.imshow(OD, cmap='hot', interpolation='nearest')
@@ -352,26 +328,14 @@ if __name__ == "__main__":
         plt.tight_layout()
         plt.savefig("../../images/od_matrix"+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+".png", dpi=300)
     
-    # print(OD.shape)
-    # W = create_assignment(OD, num_detectors)
-    # print(W.shape)
-    # OD_long = OD.reshape(-1, 1)
-
     if plot:
         fig, ax = plt.subplots(1,1, figsize=(10,10))
         plt.imshow(W, cmap='hot', interpolation='nearest')
         plt.xlabel("Count Detector-Intervals")
         plt.ylabel("OD pair - Intervals")
-        # plt.yticks(np.arange(0,W.shape[0],4*num_od**2), size=6)
-        # plt.xticks(np.arange(0,W.shape[1],4*num_detectors), size=6)
         plt.tight_layout()
         plt.savefig("../../images/assignment_matrix"+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+".png", dpi=300)
     
-    # print(OD_long.shape)
-    # counts = synthetic_simulation(OD_long, W)
-    # counts = counts.reshape(-1, num_detectors).T
-    # print(counts.shape)
-
     if plot:
         fig, ax = plt.subplots(1,1, figsize=(10,5))
         plt.imshow(counts, cmap='hot', interpolation='nearest')
@@ -379,10 +343,3 @@ if __name__ == "__main__":
         plt.ylabel("Count Detector")
         plt.tight_layout()
         plt.savefig("../../images/count_matrix"+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+".png", dpi=300)
-
-    # np.save('../../synthetic/OD'+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+'.npy', OD)
-
-    # dont save assignment as it is a big matix and takes lot of space
-    # np.save('../../synthetic/assignment'+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+"_"+str(TOD_S)+'.npy', W)
-
-    # np.save('../../synthetic/counts'+str(int(np.sqrt(OD.shape[0])))+"_"+str(interval)+"_"+str(TOD_S)+'.npy', counts)

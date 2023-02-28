@@ -38,6 +38,9 @@ This platform can calibrate two kinds of scenarios:
     * Creation of trips from time-dependent OD matrices
     * Routing for the trips based on the route-choice algorithm
     * Dynamic network conditions, traffic propagation and re-routing
+
+## Architecture
+_todo_
 ## Input preparation
 <b>Black-box or dynamic simulator </b> scenarios need quite-a-few formatted inputs
 * Network file: Standard SUMO network

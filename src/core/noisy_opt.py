@@ -350,20 +350,6 @@ def minimizeSPSA(func, x0, args=(), bounds=None, niter=100, paired=True,
             if paired:
                 fkwargs['seed'] = np.random.randint(0, np.iinfo(np.uint32).max)
             if bounds is None:
-                # grad = (funcf(x + np.multiply(x, ck*delta), **fkwargs) - funcf(x - np.multiply(x, ck*delta), **fkwargs)) / (2*ck*delta)
-                # this is a modified version of original SPSA where the perturbation and step size are scaled based
-                # on the original vector using normalization factor --> bigger perturbation and bigger step size in large OD pairs
-                # consider the zero end case
-                # print(ck)
-                # grad = (funcf(x + np.multiply(x/np.max(x), ck*delta), **fkwargs) - funcf(x - np.multiply(x/np.max(x), ck*delta), **fkwargs)) / (2*ck*delta)
-                # xplus  = x + np.multiply(x+1, ck*delta)
-                # print(xplus)
-                # xminus = x - np.multiply(x+1, ck*delta)
-                # print(xminus)
-                # modified to make it suitable for small od pairs
-                # not multiply by x in the denominator, means gradient is scaled in proportions to the magnitude of x
-                # imagine it as multiplying in numerator as well
-
                 xplus  = np.round(x + np.multiply(x+1, ck*delta))
                 xminus = np.round(x - np.multiply(x+1, ck*delta))
                 with parallel_backend('threading', n_jobs=2):
@@ -374,20 +360,8 @@ def minimizeSPSA(func, x0, args=(), bounds=None, niter=100, paired=True,
                 pos_perturb = list_perturb[0]
                 neg_perturb = list_perturb[1]
                 grad = np.sum(pos_perturb - neg_perturb) / (2*ck*delta)
-                # grad = (funcf(xplus, **fkwargs) - funcf(xminus, **fkwargs)) / (2*ck*delta)
                 save_grad.append(grad)
             else:
-                # ensure evaluation points are feasible
-                # with flow normalization
-                # xplus = project(x + np.multiply(x/np.max(x), ck*delta))
-                #without normalization
-                
-                # xplus = project(x + np.multiply(x, ck*delta))
-                # print(xplus)
-                # xminus = project(x - np.multiply(x/np.max(x), ck*delta))
-                # xminus = project(x - np.multiply(x, ck*delta))
-                # print(xminus)
-                # grad = (funcf(xplus, **fkwargs) - funcf(xminus, **fkwargs)) / (2*ck*delta)
 
                 xplus  = np.round(x + np.multiply(x+1, ck*delta))
                 xminus = np.round(x - np.multiply(x+1, ck*delta))
@@ -399,17 +373,12 @@ def minimizeSPSA(func, x0, args=(), bounds=None, niter=100, paired=True,
                 pos_perturb = list_perturb[0]
                 neg_perturb = list_perturb[1]
                 grad = np.sum(pos_perturb - neg_perturb) / (2*ck*delta)
-                # grad[grad== -np.inf] = -np.mean(grad)
-                # grad[grad== +np.inf] = np.mean(grad)
-                # print(grad)
+
                 save_grad.append(grad)
-                # print(save_grad)
-        # print(save_grad)
 
         # take the mean of the replications
         grad = np.mean(save_grad, axis=0)
         
-        # print(ak)
         # step-size is scaled proportionally to the size
         x = project(x - ak*grad*x)
         funcf(x, eval_rmsn=True, **fkwargs)
@@ -596,21 +565,13 @@ def minimize_W_SPSA(func, x0, w_matrix, args=(), bounds=None, niter=100, paired=
         ck = c/(k+1.0)**gamma
         
         save_grad = []
-        ### use fixed delta, to get the gradient many times
-        ### if this was inside the for loop, then a different delta is selected every time
-        ### this is close to same as SUMO Repitions to have less stochastic estimate of GoF]
-        ### since the OD vector is fixed but generation of trips is different.
-        # x_sol = []
-        # for sol in range(0,3):
+
         delta = np.random.choice([-1, 1], size=N)
         for i in range(0, reps):
             fkwargs = dict()
             if paired:
                 fkwargs['seed'] = np.random.randint(0, np.iinfo(np.uint32).max)
             if bounds is None:
-                ### if not rounded even a decimal perturbation will translate to an integer
-                ### and in case of many zones, this can cause too much noise like in the San Francisco 
-                ### scenario
                 xplus  = np.round(x + np.multiply(x+1, ck*delta))
                 xminus = np.round(x - np.multiply(x+1, ck*delta))
                 with parallel_backend('threading', n_jobs=2):
@@ -632,35 +593,15 @@ def minimize_W_SPSA(func, x0, w_matrix, args=(), bounds=None, niter=100, paired=
                                                                     for x_v,kwargs in (
                                                                         [xplus, {'weighted': True, 'which_perturb':'positive'}],\
                                                                         [xminus, {'weighted': True, 'which_perturb':'negative'}]))
-                # pos_perturb = funcf(xplus, weighted = True, which_perturb='positive', **fkwargs)
-                # neg_perturb = funcf(xminus, weighted = True, which_perturb='negative', **fkwargs)
                 pos_perturb = list_perturb[0]
                 neg_perturb = list_perturb[1]
                 grad = w_matrix @ (pos_perturb - neg_perturb) / (2*ck*delta)
                 save_grad.append(grad)
         grad = np.mean(save_grad, axis=0)
-
-        # if k==0:
-        # 	ak = 1e6/(len(pos_perturb)*network_correlation*len(xplus)**2)
-        # 	print(ak)
-
-        #### below comments are redundant: noise depedns on goodness of fit e.g., SMAPE vs MSE ####
-        # for normally distributed od vector (in synthetic cases) use x = project(x - ak*grad*x)
-        # x = project(x - ak*grad*x)
-        # adding more x in above will reduce sensitivity of small ods to change, but make
-        # sure to reduce the parameter ak also. This is not pure SPSA, but might be helpful
-        # hack e.g. x = project(x - ak*grad*x*x)
-        # advantage of this is that in limits noise in proportion to the size of od vector
-        
-        # this is not totally correct
-        # for beta distributed od vector (in munich case) use x = project(x - ak*grad)
-        # this works with normal distributiion also, but increase the learning rate by approx 100 times
-        # draw back of this is that it introduces a fixed noise in the demand vector of all scales
         
         x = project(x - ak*grad - momentum*prev_change)
         prev_change = ak*grad
-        # x_sol.append(x)
-        # x = np.mean(x_sol, axis=0)
+
         funcf(x, eval_rmsn=True, **fkwargs)
         if disp and (k%5) == 0:
             pass

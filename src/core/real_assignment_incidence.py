@@ -118,13 +118,6 @@ def generate_detector_incidence(path_od_sample,
                                 new_edge = str(detector)
                                 for e in edges:
                                     if new_edge==e:
-                                        #  a naive approach will to assign the weights equal to 1
-                                        # this is a binary approximation, a continous value between 0 and 1 can also be used 
-                                        # for exact correlation specification
-                                        # assign a weight equal to the proportion of trips from an OD passing a specfifc detector
-                                        # alternative is to assign a weight equal to the contribution of an OD to the number of 
-                                        # vehicles on a specific counter
-                                        # from the origin
                                         incidence_assignment_array[i+k*len(od_pairs), q+l*num_detectors] += 1
                                         incidence_weight_array[i+k*len(od_pairs), q+l*num_detectors] = len(temp_od)/origin_trips #1 
                     incidence_assignment_array[i+k*len(od_pairs), :] /= len(temp_od) #1 
@@ -137,9 +130,6 @@ def generate_detector_incidence(path_od_sample,
         else:
             incidence_weight_array[incidence_weight_array<=threshold_value]=0
 
-        
-    # incidence_array = incidence_array.astype("int8")
-    
     if do_plot == True:
         path_plot="../../images/weight_incidence_"+scenario+"_"+str(threshold_value)+".png"
         fig, ax = plt.subplots(1,1, figsize=(60,60))
@@ -208,102 +198,5 @@ def prepare_weight_matrix(W, weight_counts, weight_od, weight_speed):
 
 
 if __name__ == "__main__":
-    scenario = sys.argv[1]
-    set_threshold = eval(sys.argv[2])
-    threshold_val = float(sys.argv[3])
-    is_synthetic = eval(sys.argv[4])
-    binary_rounding = eval(sys.argv[5])
 
-    if scenario == 'san_francisco':
-        Paths = {'od_file' : "../../san_francisco/demand/od_list.txt",
-                'trips_file' : "../../san_francisco/temp_wspsa/trips",
-                'routes_file' : "../../san_francisco/temp_wspsa/routes.rou.xml",
-                'detector_file' : "../../san_francisco/additional.add.xml",
-                'true_counts': "../../san_francisco/true_counts/true_counts.csv",
-                # 'det_counts' : "../../scenario_munich/detectors_with_counts.csv",
-                'save_output' : "../../san_francisco/temp_wspsa/weight_matrix_real_counts.pickle"
-                }
-    elif scenario == 'munich':
-
-            Paths = {'od_file' : "../../scenario_munich/true_demand/od_list.txt",
-                'trips_file' : "../../scenario_munich/temp_wspsa/trips",
-                'routes_file' : "../../scenario_munich/temp_wspsa/routes.rou.csv",
-                'detector_file' : "../../scenario_munich/additional.add.csv",
-                'true_counts': "../../scenario_munich/true_counts/true_counts.csv",
-                #### Some detectors in Munich scenario (and composite dont match with real counts vs additional...
-                #### Why? did the network change or something else??),
-                'det_counts' : "../../scenario_munich/detectors_with_counts.csv",
-                'save_output' : "../../scenario_munich/temp_wspsa/weight_matrix_real_counts.pickle"
-                }
-
-    elif scenario == 'msm_scenario_munich':
-
-            Paths = {'od_file' : "../../msm_scenario_munich/demand/od_list.txt",
-                'trips_file' : "../../msm_scenario_munich/wspsa/trips",
-                'routes_file' : "../../msm_scenario_munich/wspsa/routes.rou.xml",
-                'detector_file' : "../../msm_scenario_munich/wspsa/additional.add.csv",
-                'true_counts': "../../msm_scenario_munich/true_counts/real_counts.csv",
-                'det_counts' : "../../msm_scenario_munich/detectors_with_counts.csv",
-                'save_output' : "../../msm_scenario_munich/wspsa/weight_matrix_thresh_"+str(set_threshold)+"_synthetic_"+str(is_synthetic)+\
-                                "_"+str(threshold_val)+"_"+"binary_"+str(binary_rounding)+".pickle"
-                }
-
-    elif scenario == 'composite_scenario_munich':
-
-            Paths = {'od_file' : "../../composite_scenario_munich/demand/od_list.txt",
-                'trips_file' : "../../composite_scenario_munich/temp_munich_wspsa/trips_output",
-                'routes_file' : "../../composite_scenario_munich/temp_munich_wspsa/routes.rou.xml",
-                'detector_file' : "../../composite_scenario_munich/temp_munich_wspsa/additionalcomplete.add.xml",
-                'true_counts': "../../composite_scenario_munich/true_counts/real_counts_complete.csv",
-                #### Some detectors in Munich scenario (and composite dont match with real counts vs additional...
-                #### Why? did the network change or something else??)
-                'det_counts' : "../../composite_scenario_munich/matchable_detectors.csv",
-                'save_weights' : "../../composite_scenario_munich/wspsa/weight_matrix_thresh_"+str(set_threshold)+"_synthetic_"+str(is_synthetic)+\
-                                "_"+str(threshold_val)+"_"+"binary_"+str(binary_rounding)+".pickle",
-                'save_assignment' : "../../composite_scenario_munich/wspsa/assignment_matrix.pickle"
-                }
-
-    elif scenario == 'synthetic_msm_scenario_munich':
-
-            Paths = {'od_file' : "../../msm_scenario_munich/demand/od_list.txt",
-                'trips_file' : "../../msm_scenario_munich/wspsa/trips",
-                'routes_file' : "../../msm_scenario_munich/wspsa/routes.rou.xml",
-                'detector_file' : "../../msm_scenario_munich/wspsa/additional.add.csv",
-                'true_counts': "../../msm_scenario_munich/wspsa/synthetic_counts.csv",
-                'det_counts' : "../../msm_scenario_munich/detectors_with_counts.csv",
-                'save_output' : "../../msm_scenario_munich/wspsa/weight_matrix_thresh_"+str(set_threshold)+"_synthetic_"+str(is_synthetic)+\
-                                "_"+str(threshold_val)+"_"+"binary_"+str(binary_rounding)+".pickle"
-                }
-    elif scenario == 'demo_grid':
-
-        Paths = {'od_file' : "../../demos/demand/od_list.txt",
-            'trips_file' : "../../demos/temp_outsim_wspsa/trips_output",
-            'routes_file' : "../../demos/temp_outsim_wspsa/routes.rou.xml",
-            'detector_file' : "../../demos/temp_outsim_wspsa/additional.add.xml",
-            'true_counts': "../../demos/temp_outsim_wspsa/real_counts_complete.csv",
-            #### Some detectors in Munich scenario (and composite dont match with real counts vs additional...
-            #### Why? did the network change or something else??)
-            'det_counts' : "",
-            'save_weights' : "../../demos/wspsa/weight_matrix_thresh_"+str(set_threshold)+"_synthetic_"+str(is_synthetic)+\
-                            "_"+str(threshold_val)+"_"+"binary_"+str(binary_rounding)+".pickle",
-            'save_assignment' : "../../demos/wspsa/assignment_matrix.pickle"
-                }
-    else:
-        raise("Enter a valid scenario")
-
-    W, A = generate_detector_incidence(Paths['od_file'],
-                                Paths['routes_file'],
-                                Paths['trips_file'],
-                                Paths['detector_file'],
-                                Paths['true_counts'],
-                                Paths['det_counts'],
-                                Paths['save_weights'],
-                                Paths['save_assignment'],
-                                scenario,
-                                set_threshold,
-                                threshold_val,
-                                is_synthetic, 
-                                binary_rounding)
-    print(W.shape)
-    print(A.shape)
     print("Done")

@@ -5,33 +5,17 @@ import os
 
 from scenario_generator import *
 
-PATH_ADDITIONAL = os.environ.get("PATH_ADDITIONAL") #"../../"+SCENARIO+"/additional.add.xml"
-
-# additional file edited  to increase the distance of detector from
-# starting edge as it overlaps when there is a off ramp
-# Solution: increase pos to 40-60 metres in generate_additional.py 
-
+PATH_ADDITIONAL = os.environ.get("PATH_ADDITIONAL")
 
 
 def copy_additonal(PATH_ORIG_ADDITIONAL, path_temp):
-    # print("Addition file copied from :"+ PATH_ORIG_ADDITIONAL+" to :" + path_temp)
+    
     copyfile(PATH_ORIG_ADDITIONAL, path_temp)
 
 def call_sumo(cmd_string):
     # print(cmd_string)
     subprocess.run(cmd_string +\
                     " --mesosim --no-warnings", shell=True) #--verbose 
-
-    # this does not seem to finish when the simulation is very fast
-    # as for Sioux Falls, that why tried below code but that is also 
-    # not working :(
-    # This results in missing out.xml file 
-    # process = subprocess.Popen(cmd_string +\
-    # 							" --mesosim --verbose", shell=True, stdout=subprocess.PIPE)
-    # for line in process.stdout:
-    # 	print(line)
-    # process.wait()
-    # print(process.returncode)
 
 def run_simulation(path_trips, 
                     path_routes,

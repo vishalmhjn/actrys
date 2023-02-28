@@ -1,8 +1,3 @@
-import numpy as np
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
 from scipy import optimize
 import noisy_opt as noisyopt
 
@@ -10,8 +5,6 @@ import platform
 
 sys_id = platform.system()
 
-# Evaluate the sensitivity, time and space efficiency of the optimisationo allgorithms
-# Implement Callbacks to store the results
 
 objective_val = []
 

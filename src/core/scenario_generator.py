@@ -1,23 +1,20 @@
 import numpy as np
 import subprocess
 import os
-#### NOTES
-# TAZ file creation: Manual
-# OD fle creation: Manual
 
 SUMO_PATH = os.getenv("SUMO_HOME")
-# print(SUMO_PATH)
+print(SUMO_PATH)
 
 # Scenario variables
-SCENARIO = os.environ.get("SCENARIO") #"sioux_falls" #"scenario_munich"
-OD_FILE_IDENTIFIER = os.environ.get("OD_FILE_IDENTIFIER") #"SF" #"MR"
-DEMAND_SOURCE = os.environ.get("DEMAND_SOURCE")#"syn_demand"
-temp_scenario_name = os.environ.get("temp_scenario_name") #"temp"
+SCENARIO = os.environ.get("SCENARIO")
+OD_FILE_IDENTIFIER = os.environ.get("OD_FILE_IDENTIFIER")
+DEMAND_SOURCE = os.environ.get("DEMAND_SOURCE")
+temp_scenario_name = os.environ.get("temp_scenario_name")
 
 # Static Files
-PATH_ZONE = os.environ.get("PATH_ZONE") #"../../"+SCENARIO+"/taZes.taz.xml" #taZes5.taz.xml" 
-PATH_DEMAND = os.environ.get("PATH_DEMAND") #"../../"+SCENARIO+"/"+DEMAND_SOURCE+"/"+OD_FILE_IDENTIFIER+".txt"
-PATH_NETWORK = os.environ.get("PATH_NETWORK") #"../../"+SCENARIO+"/network.net.xml"
+PATH_ZONE = os.environ.get("PATH_ZONE")
+PATH_DEMAND = os.environ.get("PATH_DEMAND")
+PATH_NETWORK = os.environ.get("PATH_NETWORK")
 
 DEMAND_INTERVAL = int(os.environ.get("DEMAND_INTERVAL"))/3600
 
