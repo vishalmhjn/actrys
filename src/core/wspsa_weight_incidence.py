@@ -36,6 +36,72 @@ def generate_detector_incidence(path_od_sample,
                                 t_warmup = WARM_UP_PERIOD*period,
                                 do_plot=False,
                                 do_save=True):
+    """Extract link incidence matrix from the simulated routes in SUMO
+
+    Parameters
+    ----------
+    path_od_sample : str, required
+        path to the sample OD matrix file in SUMO format
+
+    path_routes : str, required
+        path to the SUMO route output file
+
+    path_trip_summary : str, required
+        path to the SUMO trip summary output file
+
+    path_additional: str, required
+        path to the SUMO edge detector file i.e., additional.add.xml
+
+    path_true_count: str, required
+        path to the true counts
+    
+    path_match_detectors: str, required
+        path to the detector file to match the counts from real-world data
+
+    path_output: str, required
+        path to the output file where they should be saved
+
+    scenario: str, required
+        name of the scenario
+
+    threshold: bool, optional
+        if incidence ratio to be ignored below a threshold value
+
+    threshold_value: float, optional
+        value of the threshold value below which link incidence ratio is ignored
+
+    is_synthetic: bool, optional
+        if this is a scenario using synthetic counts. set FALSE if using real count data
+
+    binary_rounding: bool, optional
+        if the link incidence ratios to be rounded to 0 or 1 based on the threshold_value
+
+    time_interval: int, optional
+        interval of analysis of weight matrices, this is same as calibration interval
+
+    t_start: int, optional
+        start time of the simulation
+
+    t_end: int, optional
+        end time of the simulation
+
+    t_impact: int, optional
+        time upto which future impact of the current demand is possible
+    
+    t_warmup: int, optional
+        warm-up period for the simulation
+    
+    do_plot: bool, optional
+        if the link incidence matrices are to be plotted
+
+    do_save: bool, optional
+        Set True if want to save the link incidence matrix
+    
+    Returns
+    ------
+    numpy.ndarray
+        link incidence matrix
+    """
 
     print("Threshold: "+ str(threshold)+", "+ "Synthetic: "+ str(is_synthetic) + \
           "Cut-off: "+ str(threshold_value)+ ", Binary rounding: "+ str(binary_rounding))
@@ -71,8 +137,6 @@ def generate_detector_incidence(path_od_sample,
     else:
         edge_col = "det_id"
         dtd = pd.read_csv(path_true_count)
-        # dtd_real_vs_sim = pd.read_csv(Paths['det_counts'])
-        # dtd = dtd[dtd[edge_col].isin(dtd_real_vs_sim[edge_col])]
     
     if scenario=="composite_scenario_munich":
         dtd_macthing = pd.read_csv(path_match_detectors)
@@ -116,9 +180,6 @@ def generate_detector_incidence(path_od_sample,
             incidence_array[incidence_array<=threshold_value]=0
         else:
             incidence_array[incidence_array<=threshold_value]=0
-
-        
-    # incidence_array = incidence_array.astype("int8")
     
     if do_plot == True:
         fig, ax = plt.subplots(1,1, figsize=(60,60))
@@ -135,6 +196,28 @@ def generate_detector_incidence(path_od_sample,
     return incidence_array[:,int(t_warmup/3600)*num_detectors:]
 
 def prepare_weight_matrix(W, weight_counts, weight_od, weight_speed):
+
+    """Concatenate weight matrices as a preprocessing step for W-SPSA
+
+    Parameters
+    ----------
+    W : numpy.ndarray, required
+        link incidence matrix
+
+    weight_counts : float, required
+        weight of counts in the multi-objective optimization function
+
+    weight_od : float, required
+        weight of prior OD demand in the multi-objective optimization function
+    
+    weight_speed : float, required
+        weight of speed in the multi-objective optimization function
+    
+    Returns
+    ------
+    numpy.ndarray
+        weight matrix for W-SPSA
+    """
 
     if weight_counts!=0:
         if weight_od!=0:
