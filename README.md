@@ -59,7 +59,7 @@ _todo_
 	```sh
 	source ~/actrys/bin/activate
 	```
-* Make the github repository your parent directory:
+* Make the github repository your current directory:
 	```sh
 	cd path/to/your/github/repository
 	```
@@ -70,7 +70,7 @@ _todo_
 ## Execution
 Following procedure for running <b>Black-box or dynamic simulation </b> scenarios:
 
-* First, [paths](src/core/paths.py) and [parameters](src/core/params.py) are to be specified. The platform has been tested on Ubuntu and OSX platform. It has not been tested on Windows where the Paths might need to be adapted
+* First, [paths](src/core/paths.py) and [parameters](src/core/params.py) are to be specified. The platform has not been tested on Windows OS, so the Paths might need to be adapted.
 
 * Set path to the SUMO folder with SUMO_HOME variable. for example in OSX, it is generally stored at following path for SUMO version 1.10.0. You can check the this [link](https://sumo.dlr.de/docs/Basics/Basic_Computer_Skills.html#sumo_home) for more details.
 
