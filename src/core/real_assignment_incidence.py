@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import scipy.sparse
 import pickle
 import subprocess
-import sys
 import os
 
 from scenario_generator import TOD_START, TOD_END, \
@@ -38,7 +37,78 @@ def generate_detector_incidence(path_od_sample,
                                 t_warmup = WARM_UP_PERIOD*3600,
                                 do_plot=True,
                                 do_save=True):
-    print(time_interval)
+    
+    """Extract link incidence matrix from the simulated routes in SUMO
+
+    Parameters
+    ----------
+    path_od_sample : str, required
+        path to the sample OD matrix file in SUMO format
+
+    path_routes : str, required
+        path to the SUMO route output file
+
+    path_trip_summary : str, required
+        path to the SUMO trip summary output file
+
+    path_additional: str, required
+        path to the SUMO edge detector file i.e., additional.add.xml
+
+    path_true_count: str, required
+        path to the true counts
+    
+    path_match_detectors: str, required
+        path to the detector file to match the counts from real-world data
+
+    path_output: str, required
+        path to the output file where they should be saved
+
+    scenario: str, required
+        name of the scenario
+
+    threshold: bool, optional
+        if incidence ratio to be ignored below a threshold value
+
+    threshold_value: float, optional
+        value of the threshold value below which link incidence ratio is ignored
+
+    is_synthetic: bool, optional
+        if this is a scenario using synthetic counts. set FALSE if using real count data
+
+    binary_rounding: bool, optional
+        if the link incidence ratios to be rounded to 0 or 1 based on the threshold_value
+
+    time_interval: int, optional
+        interval of analysis of weight matrices, this is same as calibration interval
+
+    t_start: int, optional
+        start time of the simulation
+
+    t_end: int, optional
+        end time of the simulation
+
+    t_impact: int, optional
+        time upto which future impact of the current demand is possible
+    
+    t_warmup: int, optional
+        warm-up period for the simulation
+    
+    do_plot: bool, optional
+        if the link incidence matrices are to be plotted
+
+    do_save: bool, optional
+        Set True if want to save the link incidence matrix
+    
+    Returns
+    ------
+    numpy.ndarray
+        weight matrix
+
+    numpy.ndarray
+        link incidence matrix
+    """
+
+    # print(time_interval)
     # print("Threshold: "+ str(threshold)+", "+ "Synthetic: "+ str(is_synthetic) + \
     # 	  "Cut-off: "+ str(threshold_value)+ ", Binary rounding: "+ str(binary_rounding))
 
@@ -83,8 +153,7 @@ def generate_detector_incidence(path_od_sample,
 
     od_pairs = dfod.od_pair.unique()
     num_detectors = len(dtd[edge_col].unique())
-    # print(num_detectors)
-    # sys.exit(0)
+
     intervals = range(t_start-t_warmup, t_end, time_interval) #time_interval
     print(intervals)
 
@@ -99,9 +168,6 @@ def generate_detector_incidence(path_od_sample,
 
     for k, depr in tqdm(enumerate(intervals)):
         df_temp = df_merge[(df_merge.vehicle_depart>=depr) & (df_merge.vehicle_depart<(depr+time_interval))]
-        # for l, arrv in enumerate(intervals):
-            # temp = df_temp[(df_merge.tripinfo_arrival>arrv) & (df_merge.tripinfo_arrival<arrv+t_impact)]
-            # print(f"Arrival:{arrv} to {arrv+t_impact}, Departure:{depr} to {depr+time_interval}, trips: {len(temp)}")
         for i, od in enumerate(od_pairs):
             origin = od.split("___")[0]
             origin_trips = len(df_temp[df_temp.origin==origin])
@@ -131,14 +197,14 @@ def generate_detector_incidence(path_od_sample,
             incidence_weight_array[incidence_weight_array<=threshold_value]=0
 
     if do_plot == True:
-        path_plot="../../images/weight_incidence_"+scenario+"_"+str(threshold_value)+".png"
+        path_plot="../../resources/weight_incidence_"+scenario+"_"+str(threshold_value)+".png"
         fig, ax = plt.subplots(1,1, figsize=(60,60))
         plt.imshow(incidence_weight_array, cmap='hot', interpolation='nearest')
         plt.savefig(path_plot, dpi=300)
         plt.close("all")
 
 
-        path_plot="../../images/assignment_incidence_"+scenario+"_"+str(threshold_value)+".png"
+        path_plot="../../resources/assignment_incidence_"+scenario+"_"+str(threshold_value)+".png"
         fig, ax = plt.subplots(1,1, figsize=(60,60))
         plt.imshow(incidence_assignment_array, cmap='hot', interpolation='nearest')
         plt.savefig(path_plot, dpi=300)
@@ -152,50 +218,8 @@ def generate_detector_incidence(path_od_sample,
         with open(path_output_assignment,'wb') as file:
             pickle.dump(S, file)
     
-    
-
-    print("Weight Matrix Succeess")
     return incidence_weight_array[:,int(t_warmup/(3600*period_fraction))*num_detectors:],\
            incidence_assignment_array[:,int(t_warmup/(3600*period_fraction))*num_detectors:]
-
-def prepare_weight_matrix(W, weight_counts, weight_od, weight_speed):
-
-    if weight_counts!=0:
-        if weight_od!=0:
-            if weight_speed!=0:
-                ###### Warning: Change the dtype of the weight array to float32 (4 bytes) 
-                # if you want the correlation to be float values between 0 and 1. Now it is 
-                # configured to int8 which takes 1 byte of space
-                weight_wspsa = np.zeros((W.shape[0], W.shape[1]+W.shape[0]+W.shape[1]), dtype='int8')
-                weight_wspsa[:, :W.shape[1]] = np.where(W>0, 1, 0) 
-                weight_wspsa[:, W.shape[1]:W.shape[1]+W.shape[0]] = np.eye(W.shape[0])
-                weight_wspsa[:, W.shape[1]+W.shape[0]:] = np.where(W>0, 1, 0)
-            else:
-                weight_wspsa = np.zeros((W.shape[0], W.shape[1]+W.shape[0]), dtype='int8')
-                weight_wspsa[:, :W.shape[1]] = np.where(W>0, 1, 0) 
-                weight_wspsa[:, W.shape[1]:] = np.eye(W.shape[0])
-        else:
-            if weight_speed!=0:
-                weight_wspsa = np.zeros((W.shape[0], W.shape[1]+W.shape[1]), dtype='int8')
-                weight_wspsa[:, :W.shape[1]] = np.where(W>0, 1, 0) 
-                weight_wspsa[:, W.shape[1]:] = np.where(W>0, 1, 0)
-            else:
-                weight_wspsa = np.where(W>0, 1, 0).astype('int8')
-    else:
-        if weight_od!=0:
-            if weight_speed!=0:
-                weight_wspsa = np.zeros((W.shape[0], W.shape[0]+W.shape[1]), dtype='int8')
-                weight_wspsa[:, :W.shape[0]] = np.eye(W.shape[0])
-                weight_wspsa[:, W.shape[0]:] = np.where(W>0, 1, 0)
-            else:
-                weight_wspsa = np.eye(W.shape[0], dtype='int8')
-        else:
-            if weight_speed!=0:
-                weight_wspsa = np.where(W>0, 1, 0).astype('int8')
-            else:
-                raise("All the weights cannot be zero")
-    return weight_wspsa
-
 
 if __name__ == "__main__":
 
