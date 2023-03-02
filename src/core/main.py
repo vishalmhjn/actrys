@@ -14,7 +14,6 @@ from output_processor import *
 from od_formatter import OD_dataframe_to_txt, OD_txt_to_dataframe
 from optimizer import SolutionFinder
 from scenario_generator import OD_FILE_IDENTIFIER
-from scenario_generator import file_manager
 from wspsa_weight_incidence import prepare_weight_matrix
 from real_assignment_incidence import generate_detector_incidence
 
@@ -305,40 +304,6 @@ def objective_function(X,
             copy_additonal(pre_string + '/edge_data_3600', pre_string + '/best_edge_data_3600')
             copy_additonal(pre_string + '/out.csv', pre_string + '/best_out.csv')
 
-        if rmsn < 0.05:
-            fig, ax = plt.subplots(1,1,figsize=(10,6))
-            ax = utilities.plot_loss_curve(ax, res_dict, spsa_a, spsa_c)
-            plt.savefig("../../images/loss_"+str(num_od)+"_"+\
-                    str(n_iterations)+"_"+str(weight_od)+"_"+str(weight_counts)+"_"+\
-                        str(weight_speed)+"_"+str(which_algo)+".png", dpi=300)
-            plt.close()
-
-            fig, ax = plt.subplots(3,2,figsize=(7,9))
-
-            fig, ax = utilities.plot_45_degree_plots(fig, ax, X_OD, estimated, init,
-                                                weight_counts, weight_od, weight_speed,
-                                                true_counts, simulated_counts, initial_counts,
-                                                true_speeds, simulated_speeds, speed_init, 
-                                                spsa_a, spsa_c, noise_param, bias_param)
-
-            plt.tight_layout()
-            plt.savefig("../../images/results_"+str(num_od)+"_"+\
-                    str(n_iterations)+"_"+str(weight_od)+"_"+str(weight_counts)+"_"+\
-                        str(weight_speed)+"_"+str(which_algo)+".png", dpi=300)
-
-            save_counts = pd.DataFrame({"real": true_counts, 'simulated': simulated_counts})
-            save_counts.to_pickle(pre_string+"/counts.pkl")
-
-            res_dict = save_params(res_dict, ['spsa_a', 'spsa_c', 'n_iterations',
-                                    'noise_param', 'bias_param', 'spsa_reps',
-                                    'weight_counts', 'weight_od', 'weight_speed', 'wspsa_thrshold'])
-
-            with open(pre_string+'/results_'+timestr+'.json', 'w') as fp:
-                print(res_dict)
-                json.dump(res_dict, fp)
-            sys.exit()
-            # this is not good maybe change it
-            # increasing the scale of RMSN as it is a small value
     return rmsn
 
 def objective_function_without_simulator(X, 
