@@ -394,11 +394,7 @@ def calibration_handler(obj_func,
                         p_momentum,
                         bounds):
     '''Wrapper for calibration 
-    TODO when the random pertubation lands in a negative range
-    As expected, SUMO gives an errors and does not generates new trips
-    So optimizer uses the same routes as last time for goodness evaluation
-    Need to think a better way to handle this, so that negative values are totally
-    avoided'''
+    '''
     sf = SolutionFinder(obj_func,
                         bounds = bounds,
                         x0 = x0)
@@ -455,11 +451,7 @@ def calibration_handler_out_of_loop(obj_func,
                                     ck,
                                     bounds):
     '''Wrapper for calibration 
-    TODO when the random pertubation lands in a negative range
-    As expected, SUMO gives an errors and does not generates new trips
-    So optimizer uses the same routes as last time for goodness evaluation
-    Need to think a better way to handle this, so that negative values are totally
-    avoided'''
+    '''
 
     sf = SolutionFinder(obj_func,
                         bounds = bounds,
