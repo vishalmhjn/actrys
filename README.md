@@ -4,7 +4,7 @@ Copyright 2020-2023 Vishal Mahajan
 <b>actrys</b> is a Python-based platform to calibrate the traffic simulations in SUMO. 
 
 <p align="center">
-<img src="resources/munich_traffic_flows.gif" alt="drawing" width="400" align="center"/>
+<img src="resources/munich_traffic_flows.gif" alt="traffic_visualization" width="400" align="center"/>
 </p>
 
 ## Overview
@@ -40,7 +40,11 @@ This platform can calibrate two kinds of scenarios:
     * Dynamic network conditions, traffic propagation and re-routing
 
 ## Architecture
-_todo_
+
+<p align="center">
+<img src="resources/architecture.png" alt="architecture" width="400" align="center"/>
+</p>
+
 ## Input preparation
 <b>Black-box or dynamic simulator </b> scenarios need quite-a-few formatted inputs
 * Network file: Standard SUMO network
