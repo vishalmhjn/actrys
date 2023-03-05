@@ -42,7 +42,7 @@ This platform can calibrate two kinds of scenarios:
 ## Architecture
 
 <p align="center">
-<img src="resources/architecture.png" alt="architecture" width="400" align="center"/>
+<img src="resources/architecture.png" alt="architecture" width="500" align="center"/>
 </p>
 
 ## Input preparation
