@@ -53,6 +53,13 @@ This platform can calibrate two kinds of scenarios:
 * Traffic Analysis Zone file: Mapping between origin-destination zones and network edges
 * Observed sensor data such as link volumes or link speeds to be used as MOP
 
+
+## Custom Synthetic Scenario
+_todo_
+
+## Custom Real Scenario
+_todo_
+
 ## Requirements
 * The framework has been tested on __SUMO 1.13.0__ and __Python 3.8__ on both Ubuntu 18.04 and macOS 13.2. You should create a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-virtualenv) using
 	```sh
@@ -72,7 +79,19 @@ This platform can calibrate two kinds of scenarios:
 	pip install -r requirements.txt
 	```
 ## Execution
-Following procedure for running <b>Black-box or dynamic simulation </b> scenarios:
+Following procedure for running <b>Analytical or static simulation </b> scenarios. 
+
+* Set the current working director to [src/wrapper](src/wrapper/) in the Command line interface, as above.
+
+* The Python file is the overall wrapper [run_analytical_sim.py](src/wrapper/run_analytical_sim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
+
+* Run the following in terminal:
+	```sh
+	python run_analytical_sim.py
+	```
+* Outputs are stored in [synthetic_sims](synthetic_sims/) folder
+
+Following procedure for running <b>Black-box or dynamic simulation </b> scenarios with synthetic counts:
 
 * First, [paths](src/core/paths.py) and [parameters](src/core/params.py) are to be specified. The platform has not been tested on Windows OS, so the Paths might need to be adapted.
 
@@ -93,22 +112,11 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 	```
 * Outputs are stored in [munich](munich/) folder
 
-Following procedure for running <b>Analytical or static simulation </b> scenarios. 
-
-* Set the current working director to [src/wrapper](src/wrapper/) in the Command line interface, as above.
-
-* The Python file is the overall wrapper [run_analytical_sim.py](src/wrapper/run_analytical_sim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
-
-* Run the following in terminal:
-	```sh
-	python run_analytical_sim.py
-	```
-
-* Outputs are stored in [synthetic_sims](synthetic_sims/) folder
+Following procedure for running <b>Black-box or dynamic simulation </b> scenarios with real-world counts:
 ## Citation
-If you use these codes in your work, kindly cite the following working paper:
+If you use these codes in your work, kindly cite the following preprint:
 
-Mahajan, V., Cantelmo, G., and Antoniou, C, One-shot heuristic and ensembling for automated calibration of large-scale traffic simulations, Working Paper, 2023.
+Mahajan, V., Cantelmo, G., and Antoniou, C, One-shot heuristic and ensembling for automated calibration of large-scale traffic simulations, [preprint](https://mediatum.ub.tum.de/doc/1701188/1701188.pdf), 2023.
 
 ## Acknowledgements
 1. SUMO: https://github.com/eclipse/sumo
