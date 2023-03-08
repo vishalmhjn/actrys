@@ -1,34 +1,37 @@
-import numpy as np
-import json
-import matplotlib.pyplot as plt
 import sys
 import os
 import copy
+from datetime import datetime
+
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import json
+
 import utilities
-from scenario_generator import create_scenario, trip_validator
-from simulator import run_simulation, PATH_ADDITIONAL, copy_additonal
-from gof import gof_eval, squared_deviation
-from output_processor import get_true_simulated, create_synthetic_counts
-from output_processor import *
-from od_formatter import OD_dataframe_to_txt, OD_txt_to_dataframe
-from optimizer import SolutionFinder
-from scenario_generator import OD_FILE_IDENTIFIER
-from wspsa_weight_incidence import prepare_weight_matrix
-from real_assignment_incidence import generate_detector_incidence
+
+from params import *
+from paths import *
+
+from simHandler.scenarioGenerator import create_scenario, trip_validator
+from simHandler.simulator import run_simulation, PATH_ADDITIONAL, copy_additonal
+from simHandler.scenarioGenerator import OD_FILE_IDENTIFIER
+
+from optimizationHandler.gof import gof_eval, squared_deviation
+from optimizationHandler.optimizer import SolutionFinder
+
+from ioHandler.outputProcessor import get_true_simulated, create_synthetic_counts
+from ioHandler.outputProcessor import *
+from ioHandler.odFormatter import OD_dataframe_to_txt, OD_txt_to_dataframe
+from ioHandler.wspsaWeightIncidence import prepare_weight_matrix
+from ioHandler.realAssignmentIncidence import generate_detector_incidence
 
 from bayes_opt import BayesianOptimization
 from bayes_opt.logger import JSONLogger
 from bayes_opt.event import Events
 from bayes_opt.util import load_logs
 
-from datetime import datetime
 timestr = str(datetime.now().strftime('%m_%d_%Y_%H_%M_%S') )
-
-from params import *
-from paths import *
-
-
 
 res_dict = dict()
 res_dict["f_val"] = []

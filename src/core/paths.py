@@ -1,7 +1,7 @@
-from scenario_generator import file_manager
 import os
-from scenario_generator import OD_FILE_IDENTIFIER
-from simulator import PATH_ADDITIONAL
+from simHandler.scenarioGenerator import file_manager
+from simHandler.scenarioGenerator import OD_FILE_IDENTIFIER
+from simHandler.simulator import PATH_ADDITIONAL
 
 # folder paths
 temp_folder_name = os.environ.get("temp_folder_name")

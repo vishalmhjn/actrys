@@ -3,7 +3,7 @@ import numpy as np
 from shutil import copyfile
 import os
 
-from scenario_generator import *
+from simHandler.scenarioGenerator import *
 
 PATH_ADDITIONAL = os.environ.get("PATH_ADDITIONAL")
 

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from scenario_generator import *
+from simHandler.scenarioGenerator import *
 
 PATH_OD_TXT =  "../../"+SCENARIO+ "/"+DEMAND_SOURCE+"/"+OD_FILE_IDENTIFIER+".txt"
 PATH_OD_TXT_NEW = "../../"+SCENARIO+"/temp/"+OD_FILE_IDENTIFIER+".txt"
