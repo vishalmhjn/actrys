@@ -1,7 +1,7 @@
 # coding=utf-8
 import pandas as pd
-import read_class
-import sumo_class
+import helpers.readClass as readClass
+import helpers.sumoClass as sumoClass
 from tqdm import tqdm
 import sys
 # To create sumo detector file : addition.add.xml
@@ -20,45 +20,7 @@ if __name__=="__main__":
     
     DETECTOR_POS = -20
 
-    if scenario=='paris':
-        NETWORK_CSV = "../data/paris_auto.net.csv"
-        DETECTOR_MAPPING = "../sharedstreets/detector_sumo_mapping.csv"
-        FILE = "../data/paris_counts/comptages-routiers-permanents.csv"
-        FILTER = "2020-10-07" # 19:00:00"
-        TIME_COL = "Date et heure de comptage"
-        PATH_NETWORK_CSV = "../data/paris_auto.net.csv"
-        PATH_EDGE_CSV = "../data/plainnet.edg.csv"
-        SUMO_COLUMN = 'sumo_id'
-        DETECTOR_COLUMN = 'paris_id'
-        DETECTOR_LATITUDE = 'detector_lat'
-        DETECTOR_LONGITUDE = 'detector_lon'
-        OUTPUT = "../data/addition_shared_streets_filtered.add.xml"
-        paris = read_class.Paris_Counts(FILE)
-        df = paris.read_file(FILTER, time_col=TIME_COL)
-        df.dropna(inplace=True)
-        df.reset_index(inplace=True)
-        # filtered output for only keeping sensors where data is available
-        OUTPUT = "../data/addition_shared_streets_filtered.add.xml"
-        # Renaming the columns of the current time data as they are
-        # different from the archived data
-        if TIME_COL != "t1_h":
-            df.rename(columns={'Date et heure de comptage':'t_1h', 
-                            'Débit horaire':'q',
-                            'Identifiant arc': 'iu_ac'}, inplace = True)
-
-    
-    elif scenario=='sf':
-        DETECTOR_MAPPING = "../data/sf_counts/matched_detectors_qgis.csv"
-        PATH_NETWORK_CSV = "../san_francisco/network.net.csv"
-        PATH_EDGE_CSV = "../san_francisco/network.edg.csv"
-        SUMO_COLUMN = 'join_id'
-        DETECTOR_COLUMN = 'det_id'
-        DETECTOR_LATITUDE = 'Lat_N_or_E'
-        DETECTOR_LONGITUDE = 'Lon_N_or_E'
-        OUTPUT = "../data/sf_counts/additional.add.xml"
-
-
-    elif scenario=="munich":
+    if scenario=="munich":
         NETWORK_CSV = "../scenario_munich/network.net.csv"
         DETECTOR_MAPPING = "../sharedstreets/detector_sumo_mapping_munich.csv"
         FILE = "../data/BAST/day_counts_190605.csv"
@@ -100,7 +62,7 @@ if __name__=="__main__":
 
     # we need edge file, to know the number of lanes in addition.add.xml
     # get the length and num lanes of the edges
-    sumo_obj = sumo_class.Sumo_Network(PATH_NETWORK_CSV, PATH_EDGE_CSV)
+    sumo_obj = sumoClass.Sumo_Network(PATH_NETWORK_CSV, PATH_EDGE_CSV)
     df_edge_length, df_edge_lanes = sumo_obj.write_edges()
 
 

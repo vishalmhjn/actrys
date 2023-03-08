@@ -2,17 +2,9 @@ import numpy as np
 import pandas as pd
 import subprocess
 import os
-from simulator import PATH_ADDITIONAL
-from scenario_generator import *
-from gof import gof_eval
-
-def add_noise(x, perc_var, mu=1):
-    '''Add noise to a synthetic data
-    '''
-    noisy_od = []
-    for i in x:
-        noisy_od.append( int(mu*i) + int(np.random.randn()*perc_var*i))
-    return noisy_od
+from simHandler.simulator import PATH_ADDITIONAL
+from simHandler.scenarioGenerator import *
+from optimizationHandler.gof import gof_eval
 
 PATH_SUMO_TOOLS = os.environ.get("PATH_SUMO_TOOLS")
 
@@ -24,7 +16,13 @@ PATH_REAL_SPEED = os.environ.get("PATH_REAL_SPEED")
 
 REAL_COUNT_INTERVAL = DEMAND_INTERVAL
 
-from scenario_generator import TOD
+def add_noise(x, perc_var, mu=1):
+    '''Add noise to a synthetic data
+    '''
+    noisy_od = []
+    for i in x:
+        noisy_od.append( int(mu*i) + int(np.random.randn()*perc_var*i))
+    return noisy_od
 
 def xml_2_csv(cmd_string):
     subprocess.run(cmd_string, shell=True)

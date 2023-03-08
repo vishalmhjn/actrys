@@ -22,7 +22,7 @@ correction_heuristic = True
 
 scenario = "test"
 
-subprocess.run(f"python ../core/synthetic_calibrator.py \
+subprocess.run(f"python ../core/syntheticCalibrator.py \
                 {correction_heuristic_method}_50_{bias}_{noise}_{weight_profiles[0]}_{weight_profiles[1]}_{weight_profiles[2]}_{count_noise}_spsareps_{spsa_reps} True \
                 {noise} {bias} \
                 {spsa_a} {spsa_c} \

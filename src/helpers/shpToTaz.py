@@ -1,7 +1,6 @@
 import sys
 import os
-# sys.path.append(os.path.abspath("../"))
-import sumo_class
+import helpers.sumoClass as sumoClass
 import subprocess
 SUMO_PATH = os.getenv("SUMO_HOME")
 
@@ -21,10 +20,10 @@ def create_taz_from_zone_shapes(scenario_folder = "../san_francisco/",
                     "network.edg.xml", shell=True)
 
     os.chdir("../src/")
-    geo = sumo_class.Sumo_Network(path_network_csv= scenario_folder+"network.net.csv",
+    geo = sumoClass.Sumo_Network(path_network_csv= scenario_folder+"network.net.csv",
                         path_edge_csv= scenario_folder+"network.edg.csv")
     
-    taz = sumo_class.Create_TAZs(path_sumo_network_geojson=scenario_folder+'network.geojson',
+    taz = sumoClass.Create_TAZs(path_sumo_network_geojson=scenario_folder+'network.geojson',
                     path_zones_geojson= scenario_folder+zones_file)
     
     t = taz.get_tazs(attribute=taz_id_attr)

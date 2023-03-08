@@ -9,9 +9,9 @@ import pickle
 import subprocess
 import os
 
-from scenario_generator import TOD_START, TOD_END, \
-                                WARM_UP_PERIOD, COOL_DOWN_PERIOD,\
-                                DEMAND_INTERVAL
+from simHandler.scenarioGenerator import TOD_START, TOD_END, \
+                                         WARM_UP_PERIOD, COOL_DOWN_PERIOD,\
+                                         DEMAND_INTERVAL
 
 period = int(3600*DEMAND_INTERVAL)
 period_fraction = DEMAND_INTERVAL

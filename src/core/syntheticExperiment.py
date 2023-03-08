@@ -7,7 +7,7 @@ from sys import getsizeof
 from scipy.stats import invgauss
 
 
-from apriori_demand import temporal_kernel
+from aprioriDemand import temporal_kernel
 
 def create_dummy_OD(num_taz, 
                     TOD_START, 

@@ -1,17 +1,20 @@
-
+import sys
+import os
+from datetime import datetime
 
 import numpy as np
 import json
 import matplotlib.pyplot as plt
-import sys
-import os
 import pandas as pd
 
-from gof import gof_eval, squared_deviation
-from optimizer import SolutionFinder
+import utilities
+
+from optimizationHandler.gof import gof_eval, squared_deviation
+from optimizationHandler.optimizer import SolutionFinder
+from syntheticExperiment import synthetic_scenario_orchestrator, synthetic_simulation
+
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-import utilities
 
 from bayes_opt import BayesianOptimization
 from bayes_opt.logger import JSONLogger
@@ -19,7 +22,6 @@ from bayes_opt.event import Events
 from bayes_opt import SequentialDomainReductionTransformer
 from bayes_opt.util import load_logs
 
-from synthetic_experiment import synthetic_scenario_orchestrator, synthetic_simulation
 
 temp_folder_name = sys.argv[1]
 run_scenario = sys.argv[2]
@@ -48,7 +50,6 @@ best_od = []
 estimator = "wmape"
 stochastic_solution_counter = 0
 
-from datetime import datetime
 timestr = str(datetime.now().strftime('%m_%d_%Y_%H_%M_%S') )
 
 pre_string = "../../synthetic_sims"+"/"+temp_folder_name
