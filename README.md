@@ -1,4 +1,4 @@
-# actrys (Automated Calibration for TRaffic SImulations)
+# actrys (Automated Calibration for TRaffic Simulations)
 Copyright 2020-2023 Vishal Mahajan
 
 <b>actrys</b> is a Python-based platform to calibrate the traffic simulations in SUMO. 
