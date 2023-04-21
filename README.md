@@ -45,20 +45,25 @@ This platform can calibrate two kinds of scenarios:
 <img src="resources/architecture.png" alt="architecture" width="500" align="center"/>
 </p>
 
-## Input preparation
-<b>Black-box or dynamic simulator </b> scenarios need quite-a-few formatted inputs
-* Network file: Standard SUMO network
-* OD matrices inputs: Time-dependent specification of trips between Origin-Destination zones
-* Link sensor file inputs: File specifying the properties (location, frequency of data collection) of edge or link sensors
-* Traffic Analysis Zone file: Mapping between origin-destination zones and network edges
-* Observed sensor data such as link volumes or link speeds to be used as MOP
+## Input preparation for SUMO simulations
+<b>Black-box or dynamic simulator </b> scenarios need quite-a-few formatted inputs. Example file are provided in [munich](munich/).
+* __Network file__: Standard SUMO network [(example)](munich/network.net.xml)
+* __OD matrices__: Time-dependent specification of trips between Origin-Destination zones. [(example)](munich/demand/)
+* __Link sensors__: File specifying the properties (location, frequency of data collection) of edge or link sensors [(example)](munich/additional.add.xml)
+* __Traffic Analysis Zones__: Mapping between origin-destination zones and network edges [(example)](munich/tazes.taz.xml)
 
+## Custom Synthetic Scenario with SUMO
+For a custom synthetic scenario, this process is followed:
 
-## Custom Synthetic Scenario
+* A true demand is simulated to obtain "_real sensor measurements_". 
+* Subsequently, the true demand is perturbed by addition of bias and variance.
+* Perturbed demand is simulated and corressponding simulation sensor measurements are compared with the "_real sensor measurements". Based on the discrepancy between real and simulated, the calibrator aims to recover the true demand matrix.
+
+## Custom Real Scenario with SUMO
+For a real scenario, we use real counts from sensor measurements. These measurements could be open data from traffic operator website or city's open data portals. In this case, additonal input is needed to use the observed counts as an input:
+* __Observed sensor data__ such as link volumes or link speeds to be used as MOP [(example)](munich/realdata.csv).
 _todo_
-
-## Custom Real Scenario
-_todo_
+* In a real-scenario, true demand is not known. What we have is a initial demand matrix, which is simulated and corressponding simulation sensor measurements are compared with the real sensor measurements. Based on the discrepancy between real and simulated, the calibrator aims to recover the true demand matrix.
 
 ## Requirements
 * The framework has been tested on __SUMO 1.13.0__ and __Python 3.8__ on both Ubuntu 18.04 and macOS 13.2. You should create a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-virtualenv) using
@@ -113,6 +118,8 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 * Outputs are stored in [munich](munich/) folder
 
 Following procedure for running <b>Black-box or dynamic simulation </b> scenarios with real-world counts:
+
+_todo_
 ## Citation
 If you use these codes in your work, kindly cite the following preprint:
 
