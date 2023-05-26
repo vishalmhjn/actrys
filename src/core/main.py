@@ -637,7 +637,7 @@ if __name__=="__main__":
             if seq==0:
                 X_OD = np.array(OD_txt_to_dataframe(path = PATH_DEMAND))
                 X_base_true = copy.deepcopy(X_OD)
-                # add artifical noise and bias to the  demand matrix which is zero and 1 in this case
+                # add artifical noise and bias to the  demand matrix
                 initial_solution = np.array(add_noise(X_OD, int(noise_param)/100, mu=bias_param))
                 init = np.where(initial_solution<0, 0, initial_solution)
                 init_seq = copy.deepcopy(init)

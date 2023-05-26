@@ -1,41 +1,38 @@
+"""Wrapper file
+"""
 import subprocess
-from tqdm import tqdm
-import numpy as np
-spsa_a = 0.000001
-spsa_c = .01
-spsa_reps = 1
-num_iterations = 100
-only_bias_correction=False
-correction_heuristic_method = "weighted"
+SPSA_A = 0.000001
+SPSA_C = .01
+SPSA_REPS = 1
+NUM_ITERATIONS = 100
+ONLY_BIAS_CORRECTION = False
+CORRECTION_HEURISTIC_METHOD = "weighted"
 
-bias = 0.8
-noise = 20
-momentum = 0.7
+BIAS = 0.8
+NOISE = 20
+MOMENTUM = 0.7
 
-weight_profiles = (1,0,0)
-count_noise = 0
-auto_tune_spsa = False
-only_bias_correction=False
-bagging = 10
-spsa_reps = 1
-correction_heuristic = True
+WEIGHT_PROFILES = (1, 0, 0)
+COUNT_NOISE = 0
+AUTO_TUNE_SPSA = False
+BAGGING = 10
+CORRECTION_HEURISTIC = True
 
-scenario = "test"
+SCENARIO = "test"
 
 subprocess.run(f"python ../core/syntheticCalibrator.py \
-                {correction_heuristic_method}_50_{bias}_{noise}_{weight_profiles[0]}_{weight_profiles[1]}_{weight_profiles[2]}_{count_noise}_spsareps_{spsa_reps} True \
-                {noise} {bias} \
-                {spsa_a} {spsa_c} \
-                {spsa_reps} {num_iterations} \
-                wspsa {scenario} \
-                {bagging} \
-                {momentum} \
-                {count_noise} \
-                {weight_profiles[0]} \
-                {weight_profiles[1]} \
-                {weight_profiles[2]} \
-                {auto_tune_spsa} \
-                {correction_heuristic} \
-                {only_bias_correction} \
-                {correction_heuristic_method}",
-                shell=True)
+                {CORRECTION_HEURISTIC_METHOD}_50_{BIAS}_{NOISE}_{WEIGHT_PROFILES[0]}_{WEIGHT_PROFILES[1]}_{WEIGHT_PROFILES[2]}_{COUNT_NOISE}_spsareps_{SPSA_REPS} True \
+                {NOISE} {BIAS} \
+                {SPSA_A} {SPSA_C} \
+                {SPSA_REPS} {NUM_ITERATIONS} \
+                wspsa {SCENARIO} \
+                {BAGGING} \
+                {MOMENTUM} \
+                {COUNT_NOISE} \
+                {WEIGHT_PROFILES[0]} \
+                {WEIGHT_PROFILES[1]} \
+                {WEIGHT_PROFILES[2]} \
+                {AUTO_TUNE_SPSA} \
+                {CORRECTION_HEURISTIC} \
+                {ONLY_BIAS_CORRECTION} \
+                {CORRECTION_HEURISTIC_METHOD}", shell=True, check=True)
