@@ -35,4 +35,4 @@ subprocess.run(f"python ../core/syntheticCalibrator.py \
                 {AUTO_TUNE_SPSA} \
                 {CORRECTION_HEURISTIC} \
                 {ONLY_BIAS_CORRECTION} \
-                {CORRECTION_HEURISTIC_METHOD}", shell=True)
+                {CORRECTION_HEURISTIC_METHOD}", shell=True, check=True)
