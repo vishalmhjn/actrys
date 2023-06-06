@@ -4,6 +4,7 @@ install:
 
 lint:
 	pylint --disable=R,C src/wrapper/runAnalyticalSim.py
+	pylint --disable=R,C src/wrapper/runSim.py
 
 format:
 	black *.py
