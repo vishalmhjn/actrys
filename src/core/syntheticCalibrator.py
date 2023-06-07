@@ -122,40 +122,45 @@ def objective_function(X,
     
     else:
         if weight_counts!=0:
-            sd_counts = weight_counts * squared_deviation(count_init.flatten(), simulated_counts.flatten())
+            unw_sd_counts = squared_deviation(count_init.flatten(), simulated_counts.flatten())
+            sd_counts = weight_counts * unw_sd_counts
         else:
             sd_counts = np.array([])
         if weight_od!=0:
-            sd_od = weight_od * squared_deviation(X_prior, X)
+            unw_sd_od = squared_deviation(X_prior, X)
+            sd_od = weight_od * unw_sd_od / np.mean(unw_sd_od)
         else:
             sd_od = np.array([])
         if weight_speed!=0:
-            sd_speed = weight_speed * squared_deviation(speed_init.flatten(), simulated_speeds.flatten())
+            unw_sd_speeds = squared_deviation(speed_init.flatten(), simulated_speeds.flatten())
+            sd_speed = weight_speed * unw_sd_speeds / np.mean(unw_sd_speeds)
         else:
             sd_speed = np.array([])
         
         if sd_counts.size:
+            scaling_factor = np.mean(unw_sd_counts)
             if sd_od.size:
                 if sd_speed.size:
-                    rmsn = np.hstack((sd_counts, sd_od, sd_speed))
+                    rmsn = np.hstack((sd_counts, scaling_factor*sd_od, scaling_factor*sd_speed))
                 else:
-                    rmsn = np.hstack((sd_counts, sd_od))
+                    rmsn = np.hstack((sd_counts, scaling_factor*sd_od))
             else:
                 if sd_speed.size:
-                    rmsn = np.hstack((sd_counts, sd_speed))
+                    rmsn = np.hstack((sd_counts, scaling_factor*sd_speed))
                 else:
                     rmsn = sd_counts
         else:
             if sd_od.size:
+                scaling_factor = np.mean(unw_sd_od)
                 if sd_speed.size:
-                    rmsn = np.hstack((sd_od, sd_speed))
+                    rmsn = np.hstack((sd_od, scaling_factor*sd_speed))
                 else:
                     rmsn = sd_od
             else:
                 if sd_speed.size:
                     rmsn = sd_speed
                 else:
-                    raise("All weights cannot be zero")
+                    raise("All weights cannot be zero") # type: ignore
     
     if eval_rmsn==True:
         global res_dict
@@ -437,7 +442,7 @@ if __name__=="__main__":
                         ])
 
         with open(pre_string+'/results_'+timestr+'.json', 'w') as fp:
-                json.dump(res_dict, fp)
+            json.dump(res_dict, fp)
     else:
 
         rmsn_od_bias_corrected = gof_eval(X_OD, corrected_od, estimator=estimator)
@@ -611,5 +616,5 @@ if __name__=="__main__":
                                         ])
 
                 with open(pre_string+'/results_'+str(beta_momentum)+timestr+'.json', 'w') as fp:
-                        json.dump(res_dict, fp)	
+                    json.dump(res_dict, fp)	
 

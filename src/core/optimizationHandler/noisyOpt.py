@@ -585,7 +585,6 @@ def minimize_W_SPSA(func, x0, w_matrix, args=(), bounds=None, niter=100, paired=
                 save_grad.append(grad)
 
             else:
-                # inactive
                 xplus  = np.round(x + np.multiply(x+1, ck*delta))
                 xminus = np.round(x - np.multiply(x+1, ck*delta))
                 with parallel_backend('threading', n_jobs=2):
