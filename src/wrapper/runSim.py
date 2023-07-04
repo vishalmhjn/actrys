@@ -9,14 +9,14 @@ BIAS = 0.6
 NOISE = 20
 
 SPSA_A = 0.00001
-SPSA_C = .01
+SPSA_C = 0.01
 SPSA_A_OUT = 1
 SPSA_C_OUT = 1
 SPSA_REPS = 1
 NUM_ITERATIONS = 1
 SIM_OUT_ITERATIONS = 1
 SIM_IN_ITERATIONS = 5
-WSPSA_THRESHOLD = .01
+WSPSA_THRESHOLD = 0.01
 
 ESTIMATOR = "wmape"
 
@@ -36,13 +36,16 @@ CORRECTION_HEURISTIC = True
 ONLY_BIAS_CORRECTION = False
 BIAS_CORRECTION_TYPE = BIAS_CORRECTION_METHOD
 
-for i, (WEIGHT_PROFILES, COUNT_NOISE) in enumerate(zip([
-                                                        (10,0,0)
-                                                        ],
-                                                        [
-                                                        0,
-                                                        ])):
-    subprocess.run(f"sh wrapper.sh \
+for i, (WEIGHT_PROFILES, COUNT_NOISE) in enumerate(
+    zip(
+        [(10, 0, 0)],
+        [
+            0,
+        ],
+    )
+):
+    subprocess.run(
+        f"sh wrapper.sh \
                     free_{DEMAND_INTERVAL}_{BIAS}_{NOISE}_{WEIGHT_PROFILES[0]}_{WEIGHT_PROFILES[1]}_{WEIGHT_PROFILES[2]}_{COUNT_NOISE}_sequential_{BIAS_CORRECTION_TYPE}_2a \
                     True True \
                     {NOISE} {BIAS} \
@@ -67,5 +70,6 @@ for i, (WEIGHT_PROFILES, COUNT_NOISE) in enumerate(zip([
                     {DEMAND_INTERVAL} \
                     {ONLY_BIAS_CORRECTION} \
                     {BIAS_CORRECTION_TYPE}",
-                    shell=True, check=True)
-    
+        shell=True,
+        check=True,
+    )

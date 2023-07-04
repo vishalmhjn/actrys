@@ -1,4 +1,4 @@
-##### this is used to filter the trips from the TAX file recursively 
+##### this is used to filter the trips from the TAX file recursively
 ##### until the output of the do2trips generates similar trips as those
 ##### intended by removing the links which have disconnected from other links
 
@@ -6,7 +6,7 @@ import subprocess, os
 import pandas as pd
 from collections import Counter
 
-scenario_folder =  "../san_francisco/temp/"
+scenario_folder = "../san_francisco/temp/"
 SUMO_HOME = os.getenv("SUMO_HOME")
 
 if scenario_folder == "../san_francisco/temp/":
@@ -54,9 +54,11 @@ if scenario_folder == "../san_francisco/temp/":
                 <tazSource id="513704144#1" weight="100"/>
                 <tazSink id="931324852" weight="100"/> 
             </taz>"""
-    od_file_names = "../demand/OD_file_SF_5.0_6.0.txt,"+\
-                    "../demand/OD_file_SF_6.0_7.0.txt,../demand/OD_file_SF_7.0_8.0.txt,"+\
-                    "../demand/OD_file_SF_8.0_9.0.txt,../demand/OD_file_SF_9.0_10.0.txt"
+    od_file_names = (
+        "../demand/OD_file_SF_5.0_6.0.txt,"
+        + "../demand/OD_file_SF_6.0_7.0.txt,../demand/OD_file_SF_7.0_8.0.txt,"
+        + "../demand/OD_file_SF_8.0_9.0.txt,../demand/OD_file_SF_9.0_10.0.txt"
+    )
 elif scenario_folder == "../scenario_munich/temp/":
     extra_text = """<taz id="52814612"> 
                 <tazSource id="127664113" weight="100"/> 
@@ -100,65 +102,86 @@ elif scenario_folder == "../scenario_munich/temp/":
                 <tazSource id="325030860" weight="100"/> 
                 <tazSink id="3995738" weight="100"/> 
             </taz>"""
-    od_file_names = "../true_demand/MR_5.0_6.0.txt,"+\
-                    "../true_demand/MR_6.0_7.0.txt,../true_demand/MR_7.0_8.0.txt,"+\
-                    "../true_demand/MR_8.0_9.0.txt,../true_demand/MR_9.0_10.0.txt"
+    od_file_names = (
+        "../true_demand/MR_5.0_6.0.txt,"
+        + "../true_demand/MR_6.0_7.0.txt,../true_demand/MR_7.0_8.0.txt,"
+        + "../true_demand/MR_8.0_9.0.txt,../true_demand/MR_9.0_10.0.txt"
+    )
 else:
-    raise("The scenario folder is not covered")
+    raise ("The scenario folder is not covered")
 
-def generate_trips(taz_file = "newtaZes.taz.xml"):
+
+def generate_trips(taz_file="newtaZes.taz.xml"):
     os.chdir(scenario_folder)
-    subprocess.run("od2trips -n "+taz_file+" -d "+od_file_names+\
-                " -o trips.trips.xml", shell=True)
-    subprocess.run("duarouter -n ../network.net.xml -r trips.trips.xml --ignore-errors -o routes.rou.xml --error-log errors.txt", shell=True)
-    subprocess.run("python "+SUMO_HOME+"/tools/purgatory/route2trips.py routes.rou.xml > validated_trips.trips.xml", shell=True)
+    subprocess.run(
+        "od2trips -n " + taz_file + " -d " + od_file_names + " -o trips.trips.xml",
+        shell=True,
+    )
+    subprocess.run(
+        "duarouter -n ../network.net.xml -r trips.trips.xml --ignore-errors -o routes.rou.xml --error-log errors.txt",
+        shell=True,
+    )
+    subprocess.run(
+        "python "
+        + SUMO_HOME
+        + "/tools/purgatory/route2trips.py routes.rou.xml > validated_trips.trips.xml",
+        shell=True,
+    )
     os.chdir("../../src/")
 
 
-def get_disconnected_edges(error_file=scenario_folder+'errors.txt'):
-        
-        impossible_trips = open(error_file, 'r')
-        Lines = impossible_trips.readlines()
-        new_lines = []
-        count = 0
-        for line in Lines:
-            #### just a clever way to find the unique rows of the mismatched edges
-            if line[-7:]=="found.\n":
-                new_lines.append(line)
+def get_disconnected_edges(error_file=scenario_folder + "errors.txt"):
+    impossible_trips = open(error_file, "r")
+    Lines = impossible_trips.readlines()
+    new_lines = []
+    count = 0
+    for line in Lines:
+        #### just a clever way to find the unique rows of the mismatched edges
+        if line[-7:] == "found.\n":
+            new_lines.append(line)
 
+    error = pd.DataFrame(new_lines)
+    error["source"] = error[0].apply(lambda x: x.split(" ")[5])
+    error["destination"] = error[0].apply(lambda x: x.split(" ")[8])
+    error["mis_match"] = error.apply(lambda x: x.source + x.destination, axis=1)
 
-        error = pd.DataFrame(new_lines)
-        error['source'] = error[0].apply(lambda x: x.split(" ")[5])
-        error['destination'] = error[0].apply(lambda x: x.split(" ")[8])
-        error['mis_match'] = error.apply(lambda x: x.source +x.destination, axis=1)
-    
-        ### Get the edges where the number of disconnected trips is more than 10
-        threshold = 3
-        error_source = [i[0].split('\'\'')[0][1:] for i in Counter(error.mis_match).most_common() if i[1]>threshold]
-        error_destination = [i[0].split('\'\'')[1][:-1] for i in Counter(error.mis_match).most_common() if i[1]>threshold]
-        return error_source, error_destination
+    ### Get the edges where the number of disconnected trips is more than 10
+    threshold = 3
+    error_source = [
+        i[0].split("''")[0][1:]
+        for i in Counter(error.mis_match).most_common()
+        if i[1] > threshold
+    ]
+    error_destination = [
+        i[0].split("''")[1][:-1]
+        for i in Counter(error.mis_match).most_common()
+        if i[1] > threshold
+    ]
+    return error_source, error_destination
+
 
 def get_length_trip_files():
-        trip_file = open(scenario_folder+"validated_trips.trips.xml", 'r')
-        Lines = trip_file.readlines()
-        count = 0
-        for line in Lines:
-            count+=1
-        return count-10 # subtracting xml headers
-        
+    trip_file = open(scenario_folder + "validated_trips.trips.xml", "r")
+    Lines = trip_file.readlines()
+    count = 0
+    for line in Lines:
+        count += 1
+    return count - 10  # subtracting xml headers
 
-def filter_tazs(remove_source, remove_destination,
-                output_path="newtaZes.taz.xml"):
+
+def filter_tazs(remove_source, remove_destination, output_path="newtaZes.taz.xml"):
     os.chdir(scenario_folder)
-    subprocess.run("python "+SUMO_HOME+"/tools/xml/xml2csv.py "+output_path, shell=True)
-    
-    taz = pd.read_csv(output_path[:-3]+"csv", sep=";")
-    taz_int = taz[taz['taz_edges'].notna()]['taz_edges']
-    taz_ext = list(taz[taz['taz_edges'].isna()]['tazSource_id'])
-    taz_ext.extend(list(taz[taz['taz_edges'].isna()]['tazSink_id'])) 
-    taz_ext = [i for i in taz_ext if  str(i)!='nan']
+    subprocess.run(
+        "python " + SUMO_HOME + "/tools/xml/xml2csv.py " + output_path, shell=True
+    )
 
-    taz_id = taz[taz['taz_edges'].notna()]['taz_id']
+    taz = pd.read_csv(output_path[:-3] + "csv", sep=";")
+    taz_int = taz[taz["taz_edges"].notna()]["taz_edges"]
+    taz_ext = list(taz[taz["taz_edges"].isna()]["tazSource_id"])
+    taz_ext.extend(list(taz[taz["taz_edges"].isna()]["tazSink_id"]))
+    taz_ext = [i for i in taz_ext if str(i) != "nan"]
+
+    taz_id = taz[taz["taz_edges"].notna()]["taz_id"]
 
     taz_dict = dict()
 
@@ -166,7 +189,7 @@ def filter_tazs(remove_source, remove_destination,
         taz_new_edges = []
         temp_int_links = j[0].split(" ")
 
-        if len(temp_int_links)>3: # at least three edges in the taz
+        if len(temp_int_links) > 3:  # at least three edges in the taz
             for k in temp_int_links:
                 if k in remove_destination:
                     continue
@@ -174,23 +197,32 @@ def filter_tazs(remove_source, remove_destination,
                     continue
                 else:
                     taz_new_edges.append(k)
-    
-                
+
         else:
-            taz_new_edges= temp_int_links
+            taz_new_edges = temp_int_links
         taz_dict[str(j[1])] = taz_new_edges
     os.chdir("../../src/")
     return taz_dict
-        
-def write_tazs(taz_dict, output_path=scenario_folder+"newtaZes.taz.xml"):
+
+
+def write_tazs(taz_dict, output_path=scenario_folder + "newtaZes.taz.xml"):
     a = """<tazs>"""
     b = ""
     # print(taz_dict)
     for i, j in enumerate(zip(list(taz_dict.keys()), list(taz_dict.values()))):
         x = j[1]
         # print(x)
-        b = b+"""<taz edges="""+"\""+str(" ".join(x))+"\" id=\""+str(j[0])+"\""+"""/>""" #+1 in the zone if for tomtom data
-    
+        b = (
+            b
+            + """<taz edges="""
+            + '"'
+            + str(" ".join(x))
+            + '" id="'
+            + str(j[0])
+            + '"'
+            + """/>"""
+        )  # +1 in the zone if for tomtom data
+
     global extra_text
     c = """</tazs>"""
     file_text = a + b + extra_text + c
@@ -199,18 +231,16 @@ def write_tazs(taz_dict, output_path=scenario_folder+"newtaZes.taz.xml"):
         f.close()
 
 
-
 if __name__ == "__main__":
-    
     expected_trips = 450000
     generate_trips(taz_file="../taZes.taz.xml")
 
     counter = 0
-    while counter< 5:# expected_trips - get_length_trip_files > 100:
+    while counter < 5:  # expected_trips - get_length_trip_files > 100:
         remove_source, remove_destination = get_disconnected_edges()
         new_taz_dict = filter_tazs(remove_source, remove_destination)
         write_tazs(new_taz_dict)
         generate_trips()
-        counter+=1
+        counter += 1
 
     print("Done")

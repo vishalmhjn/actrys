@@ -5,14 +5,14 @@ noise_param = int(os.environ.get("noise_param"))
 bias_param = float(os.environ.get("bias_param"))
 
 # SPSA Parameters
-spsa_a= float(os.environ.get("spsa_a"))
+spsa_a = float(os.environ.get("spsa_a"))
 spsa_c = float(os.environ.get("spsa_c"))
 
 spsa_c_init = spsa_c
 spsa_a_init = spsa_a
 
-spsa_a_out_sim=float(os.environ.get("spsa_a_out_sim"))
-spsa_c_out_sim=float(os.environ.get("spsa_c_out_sim"))
+spsa_a_out_sim = float(os.environ.get("spsa_a_out_sim"))
+spsa_c_out_sim = float(os.environ.get("spsa_c_out_sim"))
 
 spsa_reps = int(os.environ.get("spsa_reps"))
 
@@ -24,7 +24,7 @@ calibrate_supply = os.environ.get("calibrate_supply")
 calibrate_demand = os.environ.get("calibrate_demand")
 set_spa = os.environ.get("set_spa")
 
-which_algo =  os.environ.get("which_algo")
+which_algo = os.environ.get("which_algo")
 
 weight_counts = int(os.environ.get("weight_counts"))
 weight_od = int(os.environ.get("weight_od"))
@@ -44,9 +44,9 @@ only_bias_correction = eval(os.environ.get("only_bias_correction"))
 bias_correction_method = os.environ.get("bias_correction_method")
 
 estimator = os.environ.get("estimator")
-print("Using "+ estimator +" for selecting the best fit")
+print("Using " + estimator + " for selecting the best fit")
 
-if which_algo=="wspsa":
+if which_algo == "wspsa":
     wspsa_thrshold = float(os.environ.get("wspsa_thrshold"))
 
 # for decaying the a and c for simulation out-of-loop

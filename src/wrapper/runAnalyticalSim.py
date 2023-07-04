@@ -1,8 +1,9 @@
 """Wrapper file
 """
 import subprocess
+
 SPSA_A = 0.000001
-SPSA_C = .01
+SPSA_C = 0.01
 SPSA_REPS = 1
 NUM_ITERATIONS = 100
 ONLY_BIAS_CORRECTION = False
@@ -20,7 +21,8 @@ CORRECTION_HEURISTIC = True
 
 SCENARIO = "test"
 
-subprocess.run(f"python ../core/syntheticCalibrator.py \
+subprocess.run(
+    f"python ../core/syntheticCalibrator.py \
                 {CORRECTION_HEURISTIC_METHOD}_50_{BIAS}_{NOISE}_{WEIGHT_PROFILES[0]}_{WEIGHT_PROFILES[1]}_{WEIGHT_PROFILES[2]}_{COUNT_NOISE}_spsareps_{SPSA_REPS} True \
                 {NOISE} {BIAS} \
                 {SPSA_A} {SPSA_C} \
@@ -35,4 +37,7 @@ subprocess.run(f"python ../core/syntheticCalibrator.py \
                 {AUTO_TUNE_SPSA} \
                 {CORRECTION_HEURISTIC} \
                 {ONLY_BIAS_CORRECTION} \
-                {CORRECTION_HEURISTIC_METHOD}", shell=True, check=True)
+                {CORRECTION_HEURISTIC_METHOD}",
+    shell=True,
+    check=True,
+)

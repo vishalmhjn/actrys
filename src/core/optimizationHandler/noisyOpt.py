@@ -34,8 +34,9 @@ from sklearn.preprocessing import StandardScaler
 try:
     from scipy.optimize import OptimizeResult
 except:
+
     class OptimizeResult(dict):
-        """ Represents the optimization result.
+        """Represents the optimization result.
 
         Parameters
         ----------
@@ -66,6 +67,7 @@ except:
         with attribute accessors, one can see which attributes are available
         using the `keys()` method.
         """
+
         def __getattr__(self, name):
             try:
                 return self[name]
@@ -78,17 +80,30 @@ except:
         def __repr__(self):
             if self.keys():
                 m = max(map(len, list(self.keys()))) + 1
-                return '\n'.join([k.rjust(m) + ': ' + repr(v)
-                                  for k, v in self.items()])
+                return "\n".join([k.rjust(m) + ": " + repr(v) for k, v in self.items()])
             else:
                 return self.__class__.__name__ + "()"
 
 
-def minimizeCompass(func, x0, args=(),
-            bounds=None, scaling=None,
-            redfactor=2.0, deltainit=1.0, deltatol=1e-3, feps=1e-15,
-            errorcontrol=True, funcNinit=30, funcmultfactor=2.0,
-            paired=True, alpha=0.05, disp=False, callback=None, **kwargs):
+def minimizeCompass(
+    func,
+    x0,
+    args=(),
+    bounds=None,
+    scaling=None,
+    redfactor=2.0,
+    deltainit=1.0,
+    deltatol=1e-3,
+    feps=1e-15,
+    errorcontrol=True,
+    funcNinit=30,
+    funcmultfactor=2.0,
+    paired=True,
+    alpha=0.05,
+    disp=False,
+    callback=None,
+    **kwargs
+):
     """
     Minimization of an objective function by a pattern search.
 
@@ -113,13 +128,13 @@ def minimizeCompass(func, x0, args=(),
     scaling: array-like
         scaling by which to multiply step size and tolerances along different dimensions
     redfactor: float
-        reduction factor by which to reduce delta if no reduction direction found 
+        reduction factor by which to reduce delta if no reduction direction found
     deltainit: float
         inital pattern size
     deltatol: float
         smallest pattern size
     feps: float
-       smallest difference in function value to resolve 
+       smallest difference in function value to resolve
     errorcontrol: boolean
         whether to control error of simulation by repeated sampling
     funcNinit: int, only for errorcontrol=True
@@ -142,14 +157,14 @@ def minimizeCompass(func, x0, args=(),
     -------
     scipy.optimize.OptimizeResult object
         special entry: free
-        Boolean array indicating parameters that are unconstrained at the optimum (within feps) 
+        Boolean array indicating parameters that are unconstrained at the optimum (within feps)
     """
-    #TODO: implement variable deltas for different directions (might speed up things, see review)
+    # TODO: implement variable deltas for different directions (might speed up things, see review)
     if disp:
-        print('minimization starting')
-        print('args', args)
-        print('errorcontrol', errorcontrol)
-        print('paired', paired)
+        print("minimization starting")
+        print("args", args)
+        print("errorcontrol", errorcontrol)
+        print("paired", paired)
     # absolute tolerance for float comparisons
     floatcompatol = 1e-14
     x0 = np.asarray(x0)
@@ -161,6 +176,7 @@ def minimizeCompass(func, x0, args=(),
     if bounds is not None:
         bounds = np.asarray(bounds)
         np.clip(x0, bounds[:, 0], bounds[:, 1], out=x0)
+
     def clip(x, d):
         """clip x+d to respect bounds
         returns clipped result and effective distance"""
@@ -172,102 +188,125 @@ def minimizeCompass(func, x0, args=(),
             return xclipped, deltaeff
         else:
             return xnew, delta
+
     # generate set of search directions (+- s_i e_i | i = 1, ...,  N)
     def unit(i, N):
         "return ith unit vector in R^N"
         arr = np.zeros(N)
         arr[i] = 1.0
         return arr
+
     N = len(x0)
-    generatingset = [unit(i, N)*direction*scaling[i] for i in np.arange(N) for direction in [+1, -1]]
-   
+    generatingset = [
+        unit(i, N) * direction * scaling[i]
+        for i in np.arange(N)
+        for direction in [+1, -1]
+    ]
+
     # memoize function
     if errorcontrol:
-        funcm = AveragedFunction(
-            func, fargs=args, paired=paired, N=funcNinit)
+        funcm = AveragedFunction(func, fargs=args, paired=paired, N=funcNinit)
         # apply Bonferroni correction to confidence level
         # (need more statistics in higher dimensions)
-        alpha = alpha/len(generatingset)
+        alpha = alpha / len(generatingset)
     else:
         # freeze function arguments
         def funcf(x, **kwargs):
             return func(x, *args, **kwargs)
+
         funcm = _memoized(funcf)
 
-    x = x0 
+    x = x0
     delta = deltainit
     # number of iterations
     nit = 0
     # continue as long as delta is larger than tolerance
     # or if there was an update during the last iteration
     found = False
-    while delta >= deltatol-floatcompatol or found:
+    while delta >= deltatol - floatcompatol or found:
         nit += 1
         # if delta gets close to deltatol, do iteration with step size deltatol instead
-        if delta/redfactor < deltatol:
+        if delta / redfactor < deltatol:
             delta = deltatol
         if disp:
-            print('nit %i, Delta %g' % (nit, delta))
+            print("nit %i, Delta %g" % (nit, delta))
         found = False
         np.random.shuffle(generatingset)
         for d in generatingset:
-            xtest, deltaeff = clip(x, delta*d)
+            xtest, deltaeff = clip(x, delta * d)
             if deltaeff < floatcompatol:
                 continue
             # Does xtest improve upon previous function value?
-            if ((not errorcontrol and (funcm(xtest) < funcm(x)-feps))
-               or (errorcontrol
-                   and funcm.test(xtest, x, type_='smaller', alpha=alpha))):
+            if (not errorcontrol and (funcm(xtest) < funcm(x) - feps)) or (
+                errorcontrol and funcm.test(xtest, x, type_="smaller", alpha=alpha)
+            ):
                 x = xtest
                 found = True
                 if disp:
                     print(x)
             # Is non-improvement due to too large step size or missing statistics?
-            elif ((deltaeff >= deltatol*np.sum(np.abs(d))) # no refinement for boundary steps smaller than tolerance
-                    and ((not errorcontrol and (funcm(xtest) > funcm(x)+feps))  # changed the sign vishal 07-01-2021
-                        or (errorcontrol
-                            and funcm.test(xtest, x, type_='equality', alpha=alpha)
-                            and (funcm.diffse(xtest, x) > feps)))):
+            elif (
+                deltaeff >= deltatol * np.sum(np.abs(d))
+            ) and (  # no refinement for boundary steps smaller than tolerance
+                (
+                    not errorcontrol and (funcm(xtest) > funcm(x) + feps)
+                )  # changed the sign vishal 07-01-2021
+                or (
+                    errorcontrol
+                    and funcm.test(xtest, x, type_="equality", alpha=alpha)
+                    and (funcm.diffse(xtest, x) > feps)
+                )
+            ):
                 # If there is no significant difference the step size might
                 # correspond to taking a step to the other side of the minimum.
                 # Therefore test if middle point is better
-                xmid = 0.5*(x+xtest)
-                if ((not errorcontrol and funcm(xmid) < funcm(x)-feps)
-                    or (errorcontrol
-                        and funcm.test(xmid, x, type_='smaller', alpha=alpha))):
+                xmid = 0.5 * (x + xtest)
+                if (not errorcontrol and funcm(xmid) < funcm(x) - feps) or (
+                    errorcontrol and funcm.test(xmid, x, type_="smaller", alpha=alpha)
+                ):
                     x = xmid
                     delta /= redfactor
                     found = True
                     if disp:
-                        print('mid', x)
+                        print("mid", x)
                 # otherwise increase accuracy of simulation to try to get to significance
                 elif errorcontrol:
                     funcm.N *= funcmultfactor
                     if disp:
-                        print('new N %i' % funcm.N)
+                        print("new N %i" % funcm.N)
                     found = True
         if callback is not None:
             callback(x)
         if not found:
             delta /= redfactor
 
-    message = 'convergence within deltatol'
+    message = "convergence within deltatol"
     # check if any of the directions are free at the optimum
     delta = deltatol
     free = np.zeros(x.shape, dtype=bool)
     for d in generatingset:
         dim = np.argmax(np.abs(d))
-        xtest, deltaeff = clip(x, delta*d)
-        if deltaeff < deltatol*np.sum(np.abs(d))-floatcompatol: # do not consider as free for boundary steps
+        xtest, deltaeff = clip(x, delta * d)
+        if (
+            deltaeff < deltatol * np.sum(np.abs(d)) - floatcompatol
+        ):  # do not consider as free for boundary steps
             continue
-        if not free[dim] and (((not errorcontrol and funcm(xtest) - feps < funcm(x)) or
-            (errorcontrol and funcm.test(xtest, x, type_='equality', alpha=alpha)
-                and (funcm.diffse(xtest, x) < feps)))):
+        if not free[dim] and (
+            (
+                (not errorcontrol and funcm(xtest) - feps < funcm(x))
+                or (
+                    errorcontrol
+                    and funcm.test(xtest, x, type_="equality", alpha=alpha)
+                    and (funcm.diffse(xtest, x) < feps)
+                )
+            )
+        ):
             free[dim] = True
-            message += '. dim %i is free at optimum' % dim
-                
-    reskwargs = dict(x=x, nit=nit, nfev=funcm.nev, message=message, free=free,
-                     success=True)
+            message += ". dim %i is free at optimum" % dim
+
+    reskwargs = dict(
+        x=x, nit=nit, nfev=funcm.nev, message=message, free=free, success=True
+    )
     if errorcontrol:
         f, funse = funcm(x)
         res = OptimizeResult(fun=f, funse=funse, **reskwargs)
@@ -278,15 +317,31 @@ def minimizeCompass(func, x0, args=(),
         print(res)
     return res
 
+
 def minimize(*args, **kwargs):
     "deprecated: use minimizeCompass instead"
-    warnings.warn("This function will be deprecated in version 1.0. Use minimizeCompass instead",
-                  PendingDeprecationWarning)
+    warnings.warn(
+        "This function will be deprecated in version 1.0. Use minimizeCompass instead",
+        PendingDeprecationWarning,
+    )
     return minimizeCompass(*args, **kwargs)
 
-def minimizeSPSA(func, x0, args=(), bounds=None, niter=100, paired=True,
-                 a=1.0, c=1.0, alpha = 0.602, gamma = 0.101, reps =1,
-                 disp=False, callback=None):
+
+def minimizeSPSA(
+    func,
+    x0,
+    args=(),
+    bounds=None,
+    niter=100,
+    paired=True,
+    a=1.0,
+    c=1.0,
+    alpha=0.602,
+    gamma=0.101,
+    reps=1,
+    disp=False,
+    callback=None,
+):
     """
     Minimization of an objective function by a simultaneous perturbation
     stochastic approximation algorithm.
@@ -332,15 +387,18 @@ def minimizeSPSA(func, x0, args=(), bounds=None, niter=100, paired=True,
         # freeze function arguments
         def funcf(x, **kwargs):
             return func(x, *args, **kwargs)
+
     else:
+
         def funcf(x, **kwargs):
             return func(x, **kwargs)
+
     N = len(x0)
     x = np.array(x0)
     for k in range(niter):
-        ak = a/(k+1.0+A)**alpha
-        ck = c/(k+1.0)**gamma
-        
+        ak = a / (k + 1.0 + A) ** alpha
+        ck = c / (k + 1.0) ** gamma
+
         save_grad = []
         # replace zeros with a 1 as this will raise NAN error while
 
@@ -348,54 +406,77 @@ def minimizeSPSA(func, x0, args=(), bounds=None, niter=100, paired=True,
             delta = np.random.choice([-1, 1], size=N)
             fkwargs = dict()
             if paired:
-                fkwargs['seed'] = np.random.randint(0, np.iinfo(np.uint32).max)
+                fkwargs["seed"] = np.random.randint(0, np.iinfo(np.uint32).max)
             if bounds is None:
-                xplus  = np.round(x + np.multiply(x+1, ck*delta))
-                xminus = np.round(x - np.multiply(x+1, ck*delta))
-                with parallel_backend('threading', n_jobs=2):
-                    list_perturb = Parallel(n_jobs=2)(delayed(funcf)(x_v, **kwargs)
-                                                                    for x_v,kwargs in (
-                                                                        [xplus, {'weighted': True, 'which_perturb':'positive'}],\
-                                                                        [xminus, {'weighted': True, 'which_perturb':'negative'}]))
+                xplus = np.round(x + np.multiply(x + 1, ck * delta))
+                xminus = np.round(x - np.multiply(x + 1, ck * delta))
+                with parallel_backend("threading", n_jobs=2):
+                    list_perturb = Parallel(n_jobs=2)(
+                        delayed(funcf)(x_v, **kwargs)
+                        for x_v, kwargs in (
+                            [xplus, {"weighted": True, "which_perturb": "positive"}],
+                            [xminus, {"weighted": True, "which_perturb": "negative"}],
+                        )
+                    )
                 pos_perturb = list_perturb[0]
                 neg_perturb = list_perturb[1]
-                grad = np.sum(pos_perturb - neg_perturb) / (2*ck*delta)
+                grad = np.sum(pos_perturb - neg_perturb) / (2 * ck * delta)
                 save_grad.append(grad)
             else:
-
-                xplus  = np.round(x + np.multiply(x+1, ck*delta))
-                xminus = np.round(x - np.multiply(x+1, ck*delta))
-                with parallel_backend('threading', n_jobs=2):
-                    list_perturb = Parallel(n_jobs=2)(delayed(funcf)(x_v, **kwargs)
-                                                                    for x_v,kwargs in (
-                                                                        [xplus, {'weighted': True, 'which_perturb':'positive'}],\
-                                                                        [xminus, {'weighted': True, 'which_perturb':'negative'}]))
+                xplus = np.round(x + np.multiply(x + 1, ck * delta))
+                xminus = np.round(x - np.multiply(x + 1, ck * delta))
+                with parallel_backend("threading", n_jobs=2):
+                    list_perturb = Parallel(n_jobs=2)(
+                        delayed(funcf)(x_v, **kwargs)
+                        for x_v, kwargs in (
+                            [xplus, {"weighted": True, "which_perturb": "positive"}],
+                            [xminus, {"weighted": True, "which_perturb": "negative"}],
+                        )
+                    )
                 pos_perturb = list_perturb[0]
                 neg_perturb = list_perturb[1]
-                grad = np.sum(pos_perturb - neg_perturb) / (2*ck*delta)
+                grad = np.sum(pos_perturb - neg_perturb) / (2 * ck * delta)
 
                 save_grad.append(grad)
 
         # take the mean of the replications
         grad = np.mean(save_grad, axis=0)
-        
+
         # step-size is scaled proportionally to the size
-        x = project(x - ak*grad*x)
+        x = project(x - ak * grad * x)
         funcf(x, eval_rmsn=True, **fkwargs)
         # print 100 status updates if disp=True
-        if disp and (k%5) == 0:
+        if disp and (k % 5) == 0:
             pass
             # print(x)
         if callback is not None:
             callback(x)
-    message = 'terminated after reaching max number of iterations'
-    return OptimizeResult(fun=funcf(x), x=x, nit=niter, nfev=2*niter, message=message, success=True)
+    message = "terminated after reaching max number of iterations"
+    return OptimizeResult(
+        fun=funcf(x), x=x, nit=niter, nfev=2 * niter, message=message, success=True
+    )
 
-def minimizePCSPSA(func, x0, num_od_pairs, pca, scaler, args=(), bounds=None, \
-                    niter=100, paired=True, a=1.0, c=1.0, alpha = 0.602, \
-                    gamma = 0.101, reps =1, disp=False, callback=None):
+
+def minimizePCSPSA(
+    func,
+    x0,
+    num_od_pairs,
+    pca,
+    scaler,
+    args=(),
+    bounds=None,
+    niter=100,
+    paired=True,
+    a=1.0,
+    c=1.0,
+    alpha=0.602,
+    gamma=0.101,
+    reps=1,
+    disp=False,
+    callback=None,
+):
     """
-    Minimization of an objective function by a Principal component 
+    Minimization of an objective function by a Principal component
     simultaneous perturbation stochastic approximation algorithm.
     In this implementation the principal directions are freshly calculated
     in each iteration. Another approach is to calculate it outside this function
@@ -441,18 +522,19 @@ def minimizePCSPSA(func, x0, num_od_pairs, pca, scaler, args=(), bounds=None, \
         # freeze function arguments
         def funcf(x, **kwargs):
             return func(x, *args, **kwargs)
+
     else:
+
         def funcf(x, **kwargs):
             return func(x, **kwargs)
+
     x = np.array(x0)
 
-    
     # covert x to shape (Time, od_pairs) since od pairs are features for the principal components
     x = x.reshape(-1, num_od_pairs)
     scaler = StandardScaler()
     x = scaler.fit_transform(x)
-    
-    
+
     z = pca.fit_transform(x)
     number_components = z.shape[1]
     print(number_components)
@@ -462,53 +544,85 @@ def minimizePCSPSA(func, x0, num_od_pairs, pca, scaler, args=(), bounds=None, \
     N = len(z)
 
     for k in range(niter):
-        ak = a/(k+1.0+A)**alpha
-        ck = c/(k+1.0)**gamma
-        
+        ak = a / (k + 1.0 + A) ** alpha
+        ck = c / (k + 1.0) ** gamma
+
         save_grad = []
 
         for i in range(0, reps):
             delta = np.random.choice([-1, 1], size=N)
             fkwargs = dict()
             if paired:
-                fkwargs['seed'] = np.random.randint(0, np.iinfo(np.uint32).max)
+                fkwargs["seed"] = np.random.randint(0, np.iinfo(np.uint32).max)
 
             if bounds is None:
-                zplus  = z + np.multiply(z, ck*delta)
-                zminus = z - np.multiply(z, ck*delta)
-                xplus = scaler.inverse_transform(pca.inverse_transform(zplus.reshape(-1, number_components))).flatten()
-                xminus = scaler.inverse_transform(pca.inverse_transform(zminus.reshape(-1, number_components))).flatten()
-                grad = (funcf(xplus, **fkwargs) - funcf(xminus, **fkwargs)) / (zplus-zminus)
+                zplus = z + np.multiply(z, ck * delta)
+                zminus = z - np.multiply(z, ck * delta)
+                xplus = scaler.inverse_transform(
+                    pca.inverse_transform(zplus.reshape(-1, number_components))
+                ).flatten()
+                xminus = scaler.inverse_transform(
+                    pca.inverse_transform(zminus.reshape(-1, number_components))
+                ).flatten()
+                grad = (funcf(xplus, **fkwargs) - funcf(xminus, **fkwargs)) / (
+                    zplus - zminus
+                )
                 save_grad.append(grad)
                 print(grad)
 
-            else:				
-                zplus = project(z + np.multiply(z, ck*delta))
-                zminus = project(z - np.multiply(z, ck*delta))
-                xplus = scaler.inverse_transform(pca.inverse_transform(zplus.reshape(-1, number_components))).flatten()
-                xminus = scaler.inverse_transform(pca.inverse_transform(zminus.reshape(-1, number_components))).flatten()
-                grad = (funcf(xplus, **fkwargs) - funcf(xminus, **fkwargs)) / (zplus-zminus)
+            else:
+                zplus = project(z + np.multiply(z, ck * delta))
+                zminus = project(z - np.multiply(z, ck * delta))
+                xplus = scaler.inverse_transform(
+                    pca.inverse_transform(zplus.reshape(-1, number_components))
+                ).flatten()
+                xminus = scaler.inverse_transform(
+                    pca.inverse_transform(zminus.reshape(-1, number_components))
+                ).flatten()
+                grad = (funcf(xplus, **fkwargs) - funcf(xminus, **fkwargs)) / (
+                    zplus - zminus
+                )
                 save_grad.append(grad)
 
         grad = np.mean(save_grad, axis=0)
-        
-        z = project(z - ak*grad*z)
+
+        z = project(z - ak * grad * z)
         print(z)
-        x = scaler.inverse_transform(pca.inverse_transform(z.reshape(-1, number_components))).flatten()
+        x = scaler.inverse_transform(
+            pca.inverse_transform(z.reshape(-1, number_components))
+        ).flatten()
         print(x)
         print("-")
         # print(x)
         funcf(x, eval_rmsn=True, **fkwargs)
-        if disp and (k%5) == 0:
+        if disp and (k % 5) == 0:
             pass
         if callback is not None:
             callback(x)
-    message = 'terminated after reaching max number of iterations'
-    return OptimizeResult(fun=funcf(x), x=x, nit=niter, nfev=2*niter, message=message, success=True)
+    message = "terminated after reaching max number of iterations"
+    return OptimizeResult(
+        fun=funcf(x), x=x, nit=niter, nfev=2 * niter, message=message, success=True
+    )
 
-def minimize_W_SPSA(func, x0, w_matrix, args=(), bounds=None, niter=100, paired=True,
-                 a=1.0, c=1.0, alpha = 0.602, gamma = 0.101, reps =1, param_momentum=0.7,
-                 network_correlation=0.02, disp=False, callback=None):
+
+def minimize_W_SPSA(
+    func,
+    x0,
+    w_matrix,
+    args=(),
+    bounds=None,
+    niter=100,
+    paired=True,
+    a=1.0,
+    c=1.0,
+    alpha=0.602,
+    gamma=0.101,
+    reps=1,
+    param_momentum=0.7,
+    network_correlation=0.02,
+    disp=False,
+    callback=None,
+):
     """
     Minimization of an objective function by a Weighted simultaneous perturbation
     stochastic approximation algorithm. Lu Lu et al., 2015
@@ -554,66 +668,85 @@ def minimize_W_SPSA(func, x0, w_matrix, args=(), bounds=None, niter=100, paired=
         # freeze function arguments
         def funcf(x, **kwargs):
             return func(x, *args, **kwargs)
+
     else:
+
         def funcf(x, **kwargs):
             return func(x, **kwargs)
+
     N = len(x0)
     x = np.array(x0)
     prev_change = 0
     for k in range(niter):
-        ak = a/(k+1.0+A)**alpha
-        ck = c/(k+1.0)**gamma
-        
+        ak = a / (k + 1.0 + A) ** alpha
+        ck = c / (k + 1.0) ** gamma
+
         save_grad = []
 
         delta = np.random.choice([-1, 1], size=N)
         for i in range(0, reps):
             fkwargs = dict()
             if paired:
-                fkwargs['seed'] = np.random.randint(0, np.iinfo(np.uint32).max)
+                fkwargs["seed"] = np.random.randint(0, np.iinfo(np.uint32).max)
             if bounds is None:
-                xplus  = np.round(x + np.multiply(x+1, ck*delta))
-                xminus = np.round(x - np.multiply(x+1, ck*delta))
-                with parallel_backend('threading', n_jobs=2):
-                    list_perturb = Parallel(n_jobs=2)(delayed(funcf)(x_v, **kwargs)
-                                                                    for x_v,kwargs in (
-                                                                        [xplus, {'weighted': True, 'which_perturb':'positive'}],\
-                                                                        [xminus, {'weighted': True, 'which_perturb':'negative'}]))
+                xplus = np.round(x + np.multiply(x + 1, ck * delta))
+                xminus = np.round(x - np.multiply(x + 1, ck * delta))
+                with parallel_backend("threading", n_jobs=2):
+                    list_perturb = Parallel(n_jobs=2)(
+                        delayed(funcf)(x_v, **kwargs)
+                        for x_v, kwargs in (
+                            [xplus, {"weighted": True, "which_perturb": "positive"}],
+                            [xminus, {"weighted": True, "which_perturb": "negative"}],
+                        )
+                    )
                 pos_perturb = list_perturb[0]
                 neg_perturb = list_perturb[1]
-                grad = w_matrix @ (pos_perturb - neg_perturb) / (2*ck*delta)
+                grad = w_matrix @ (pos_perturb - neg_perturb) / (2 * ck * delta)
                 save_grad.append(grad)
 
             else:
-                xplus  = np.round(x + np.multiply(x+1, ck*delta))
-                xminus = np.round(x - np.multiply(x+1, ck*delta))
-                with parallel_backend('threading', n_jobs=2):
-                    list_perturb = Parallel(n_jobs=2)(delayed(funcf)(x_v, **kwargs)
-                                                                    for x_v,kwargs in (
-                                                                        [xplus, {'weighted': True, 'which_perturb':'positive'}],\
-                                                                        [xminus, {'weighted': True, 'which_perturb':'negative'}]))
+                xplus = np.round(x + np.multiply(x + 1, ck * delta))
+                xminus = np.round(x - np.multiply(x + 1, ck * delta))
+                with parallel_backend("threading", n_jobs=2):
+                    list_perturb = Parallel(n_jobs=2)(
+                        delayed(funcf)(x_v, **kwargs)
+                        for x_v, kwargs in (
+                            [xplus, {"weighted": True, "which_perturb": "positive"}],
+                            [xminus, {"weighted": True, "which_perturb": "negative"}],
+                        )
+                    )
                 pos_perturb = list_perturb[0]
                 neg_perturb = list_perturb[1]
-                grad = w_matrix @ (pos_perturb - neg_perturb) / (2*ck*delta)
+                grad = w_matrix @ (pos_perturb - neg_perturb) / (2 * ck * delta)
                 save_grad.append(grad)
         grad = np.mean(save_grad, axis=0)
-        
-        x = project(x - ak*grad - momentum*prev_change)
-        prev_change = ak*grad
+
+        x = project(x - ak * grad - momentum * prev_change)
+        prev_change = ak * grad
 
         funcf(x, eval_rmsn=True, **fkwargs)
-        if disp and (k%5) == 0:
+        if disp and (k % 5) == 0:
             pass
         if callback is not None:
             callback(x)
-    message = 'terminated after reaching max number of iterations'
-    return OptimizeResult(fun=funcf(x), spsa_a = ak, spsa_c = ck, 
-                            x=x, nit=niter, nfev=2*niter, message=message, success=True)
+    message = "terminated after reaching max number of iterations"
+    return OptimizeResult(
+        fun=funcf(x),
+        spsa_a=ak,
+        spsa_c=ck,
+        x=x,
+        nit=niter,
+        nfev=2 * niter,
+        message=message,
+        success=True,
+    )
+
 
 class AverageBase(object):
     """
     Base class for averaged evaluation of noisy functions.
     """
+
     def __init__(self, N=30, paired=False):
         """
         Parameters
@@ -626,7 +759,7 @@ class AverageBase(object):
         self._N = int(N)
         self.paired = paired
         if self.paired:
-            self.uint32max = np.iinfo(np.uint32).max 
+            self.uint32max = np.iinfo(np.uint32).max
             self.seeds = list(np.random.randint(0, self.uint32max, size=int(N)))
         # cache previous iterations
         self.cache = {}
@@ -646,7 +779,7 @@ class AverageBase(object):
             self.seeds.extend(list(np.random.randint(0, self.uint32max, size=Nadd)))
         self._N = N
 
-    def test0(self, x, type_='smaller', alpha=0.05, force=False, eps=1e-5, maxN=10000):
+    def test0(self, x, type_="smaller", alpha=0.05, force=False, eps=1e-5, maxN=10000):
         """
         Compares the mean at x to zero.
 
@@ -655,31 +788,35 @@ class AverageBase(object):
         type_: in ['smaller', 'equality']
             type of comparison to perform
         alpha: float
-           significance level 
+           significance level
         force: boolean
             if true increase number of samples until equality rejected or meanse=eps or N > maxN
-        eps: float 
+        eps: float
         maxN: int
         """
         if force:
-            while (self.test0(x, type_='equality', alpha=alpha, force=False, eps=eps)
-                    and self(x)[1] > eps
-                    and self.N < maxN):
+            while (
+                self.test0(x, type_="equality", alpha=alpha, force=False, eps=eps)
+                and self(x)[1] > eps
+                and self.N < maxN
+            ):
                 self.N *= 2.0
 
         mean, meanse = self(x)
         epscal = mean / meanse
-        if type_ == 'smaller':
+        if type_ == "smaller":
             return epscal < stats.norm.ppf(alpha)
-        if type_ == 'equality':
-            return np.abs(epscal) < stats.norm.ppf(1-alpha/2.0)
+        if type_ == "equality":
+            return np.abs(epscal) < stats.norm.ppf(1 - alpha / 2.0)
         raise NotImplementedError(type_)
+
 
 class AveragedFunction(AverageBase):
     """Average of a function's return value over a number of runs.
 
-        Caches previous results.
+    Caches previous results.
     """
+
     def __init__(self, func, fargs=None, **kwargs):
         """
         Parameters
@@ -691,8 +828,10 @@ class AveragedFunction(AverageBase):
         """
         super(AveragedFunction, self).__init__(**kwargs)
         if fargs is not None:
+
             def funcf(x, **kwargs):
                 return func(x, *fargs, **kwargs)
+
             self.func = funcf
         else:
             self.func = func
@@ -703,13 +842,15 @@ class AveragedFunction(AverageBase):
             xt = tuple(x)
         except TypeError:
             # if TypeError then likely floating point value
-            xt = (x, )
+            xt = (x,)
         if xt in self.cache:
             Nold = len(self.cache[xt])
             if Nold < self.N:
-                Nadd = self.N - Nold 
+                Nadd = self.N - Nold
                 if self.paired:
-                    values = [self.func(x, seed=self.seeds[Nold+i]) for i in range(Nadd)]
+                    values = [
+                        self.func(x, seed=self.seeds[Nold + i]) for i in range(Nadd)
+                    ]
                 else:
                     values = [self.func(x) for i in range(Nadd)]
                 self.cache[xt].extend(values)
@@ -719,23 +860,23 @@ class AveragedFunction(AverageBase):
                 values = [self.func(x, seed=self.seeds[i]) for i in range(self.N)]
             else:
                 values = [self.func(x) for i in range(self.N)]
-            self.cache[xt] = values 
+            self.cache[xt] = values
             self.nev += self.N
-        return np.mean(self.cache[xt]), np.std(self.cache[xt], ddof=1)/self.N**.5
+        return np.mean(self.cache[xt]), np.std(self.cache[xt], ddof=1) / self.N**0.5
 
     def diffse(self, x1, x2):
-        """Standard error of the difference between the function values at x1 and x2""" 
+        """Standard error of the difference between the function values at x1 and x2"""
         f1, f1se = self(x1)
         f2, f2se = self(x2)
         if self.paired:
             fx1 = np.array(self.cache[tuple(x1)])
             fx2 = np.array(self.cache[tuple(x2)])
-            diffse = np.std(fx1-fx2, ddof=1)/self.N**.5 
+            diffse = np.std(fx1 - fx2, ddof=1) / self.N**0.5
             return diffse
         else:
-            return (f1se**2 + f2se**2)**.5
+            return (f1se**2 + f2se**2) ** 0.5
 
-    def test(self, xtest, x, type_='smaller', alpha=0.05):
+    def test(self, xtest, x, type_="smaller", alpha=0.05):
         """
         Parameters
         ----------
@@ -745,36 +886,37 @@ class AveragedFunction(AverageBase):
             significance level
         """
         # call function to make sure it has been evaluated a sufficient number of times
-        if type_ not in ['smaller', 'equality']:
+        if type_ not in ["smaller", "equality"]:
             raise NotImplementedError(type_)
         ftest, ftestse = self(xtest)
         f, fse = self(x)
         # get function values
         fxtest = np.array(self.cache[tuple(xtest)])
         fx = np.array(self.cache[tuple(x)])
-        if np.mean(fxtest-fx) == 0.0:
-            if type_ == 'equality':
+        if np.mean(fxtest - fx) == 0.0:
+            if type_ == "equality":
                 return True
-            if type_ == 'smaller':
+            if type_ == "smaller":
                 return False
         if self.paired:
             # if values are paired then test on distribution of differences
             statistic, pvalue = stats.ttest_rel(fxtest, fx, axis=None)
         else:
             statistic, pvalue = stats.ttest_ind(fxtest, fx, equal_var=False, axis=None)
-        if type_ == 'smaller':
-            # if paired then df=N-1, else df=N1+N2-2=2*N-2 
-            df = self.N-1 if self.paired else 2*self.N-2
-            pvalue = stats.t.cdf(statistic, df) 
+        if type_ == "smaller":
+            # if paired then df=N-1, else df=N1+N2-2=2*N-2
+            df = self.N - 1 if self.paired else 2 * self.N - 2
+            pvalue = stats.t.cdf(statistic, df)
             # return true if null hypothesis rejected
             return pvalue < alpha
-        if type_ == 'equality':
+        if type_ == "equality":
             # return true if null hypothesis not rejected
             return pvalue > alpha
 
+
 class DifferenceFunction(AverageBase):
-    """Averages the difference of two function's return values over a number of runs
-    """
+    """Averages the difference of two function's return values over a number of runs"""
+
     def __init__(self, func1, func2, fargs1=None, fargs2=None, **kwargs):
         """
         Parameters
@@ -786,17 +928,20 @@ class DifferenceFunction(AverageBase):
         kwargs: various
             accepts `AverageBase` kwargs and function kwargs
         """
-        basekwargs = dict(N=kwargs.pop('N', 30),
-                          paired=kwargs.pop('paired', False))
+        basekwargs = dict(N=kwargs.pop("N", 30), paired=kwargs.pop("paired", False))
         super(DifferenceFunction, self).__init__(**basekwargs)
         if fargs1 is not None:
+
             def func1f(x, **kwargs):
                 return func1(x, *fargs1, **kwargs)
+
         else:
             func1f = func1
         if fargs2 is not None:
+
             def func2f(x, **kwargs):
                 return func2(x, *fargs2, **kwargs)
+
         else:
             func2f = func2
         self.funcs = [func1f, func2f]
@@ -807,15 +952,17 @@ class DifferenceFunction(AverageBase):
             xt = tuple(x)
         except TypeError:
             # if TypeError then likely floating point value
-            xt = (x, )
+            xt = (x,)
         for i, func in enumerate(self.funcs):
             ixt = i, xt
             if ixt in self.cache:
                 Nold = len(self.cache[ixt])
                 if Nold < self.N:
-                    Nadd = self.N - Nold 
+                    Nadd = self.N - Nold
                     if self.paired:
-                        values = [func(x, seed=self.seeds[Nold+i]) for i in range(Nadd)]
+                        values = [
+                            func(x, seed=self.seeds[Nold + i]) for i in range(Nadd)
+                        ]
                     else:
                         values = [func(x) for i in range(Nadd)]
                     self.cache[ixt].extend(values)
@@ -825,18 +972,27 @@ class DifferenceFunction(AverageBase):
                     values = [func(x, seed=self.seeds[i]) for i in range(self.N)]
                 else:
                     values = [func(x) for i in range(self.N)]
-                self.cache[ixt] = values 
+                self.cache[ixt] = values
                 self.nev += self.N
         diff = np.asarray(self.cache[(0, xt)]) - np.asarray(self.cache[(1, xt)])
-        return np.mean(diff), np.std(diff, ddof=1)/self.N**.5
+        return np.mean(diff), np.std(diff, ddof=1) / self.N**0.5
+
 
 class BisectException(Exception):
     pass
 
-def bisect(func, a, b, xtol=1e-6, errorcontrol=True,
-           testkwargs=dict(), outside='extrapolate',
-           ascending=None,
-           disp=False):
+
+def bisect(
+    func,
+    a,
+    b,
+    xtol=1e-6,
+    errorcontrol=True,
+    testkwargs=dict(),
+    outside="extrapolate",
+    ascending=None,
+    disp=False,
+):
     """Find root by bysection search.
 
     If the function evaluation is noisy then use `errorcontrol=True` for adaptive
@@ -852,7 +1008,7 @@ def bisect(func, a, b, xtol=1e-6, errorcontrol=True,
     xtol: float
         target tolerance for interval size
     errorcontrol: boolean
-        if true, assume that function is instance of DifferenceFunction  
+        if true, assume that function is instance of DifferenceFunction
     testkwargs: only for `errorcontrol=True`
         see `AverageBase.test0`
     outside: ['extrapolate', 'raise']
@@ -871,7 +1027,7 @@ def bisect(func, a, b, xtol=1e-6, errorcontrol=True,
     # check whether function is ascending or not
     if ascending is None:
         if errorcontrol:
-            testkwargs.update(dict(type_='smaller', force=True))
+            testkwargs.update(dict(type_="smaller", force=True))
             fa = func.test0(a, **testkwargs)
             fb = func.test0(b, **testkwargs)
         else:
@@ -880,41 +1036,46 @@ def bisect(func, a, b, xtol=1e-6, errorcontrol=True,
         if fa and not fb:
             ascending = True
         elif fb and not fa:
-            ascending =  False
+            ascending = False
         else:
             if disp:
-                print('Warning: func(a) and func(b) do not have opposing signs -> no search done')
-            if outside == 'raise':
+                print(
+                    "Warning: func(a) and func(b) do not have opposing signs -> no search done"
+                )
+            if outside == "raise":
                 raise BisectException()
             search = False
 
     # refine interval until it has reached size xtol, except if root outside
-    while (b-a > xtol) and search:
-        mid = (a+b)/2.0
+    while (b - a > xtol) and search:
+        mid = (a + b) / 2.0
         if ascending:
-            if ((not errorcontrol) and (func(mid) < 0)) or \
-                    (errorcontrol and func.test0(mid, **testkwargs)):
-                a = mid 
+            if ((not errorcontrol) and (func(mid) < 0)) or (
+                errorcontrol and func.test0(mid, **testkwargs)
+            ):
+                a = mid
             else:
                 b = mid
         else:
-            if ((not errorcontrol) and (func(mid) < 0)) or \
-                    (errorcontrol and func.test0(mid, **testkwargs)):
-                b = mid 
+            if ((not errorcontrol) and (func(mid) < 0)) or (
+                errorcontrol and func.test0(mid, **testkwargs)
+            ):
+                b = mid
             else:
                 a = mid
         if disp:
-            print('bisect bounds', a, b)
+            print("bisect bounds", a, b)
     # interpolate linearly to get zero
     if errorcontrol:
         ya, yb = func(a)[0], func(b)[0]
     else:
         ya, yb = func(a), func(b)
-    m = (yb-ya) / (b-a)
-    res = a-ya/m
+    m = (yb - ya) / (b - a)
+    res = a - ya / m
     if disp:
-        print('bisect final value', res)
+        print("bisect final value", res)
     return res
+
 
 class _memoized(object):
     """Decorator. Caches a function's return value each time it is called.
@@ -927,6 +1088,7 @@ class _memoized(object):
     and the function is evaluated at every call. An error can instead be raised
     by passing `nothashable=raise` when calling the function.
     """
+
     def __init__(self, func):
         self.func = func
         self.cache = {}
@@ -935,8 +1097,8 @@ class _memoized(object):
     def __call__(self, *args, **kwargs):
         # if args is not Hashable we can't cache
         # easier to ask for forgiveness than permission
-        memoize = kwargs.pop('memoize', True)
-        nothashable = kwargs.pop('nothashable', 'ignore')
+        memoize = kwargs.pop("memoize", True)
+        nothashable = kwargs.pop("nothashable", "ignore")
         if memoize:
             try:
                 index = ()
@@ -946,11 +1108,11 @@ class _memoized(object):
                     try:
                         index += tuple(arg)
                     except TypeError:
-                        index += (arg, ) 
+                        index += (arg,)
                 # try to also recompute if kwargs changed
                 for item in kwargs.values():
                     try:
-                        index += (float(item), )
+                        index += (float(item),)
                     except:
                         pass
                 if index in self.cache:
@@ -961,10 +1123,10 @@ class _memoized(object):
                     self.cache[index] = value
                     return value
             except TypeError:
-                if nothashable == 'raise':
-                    raise TypeError('Not hashable: %s' % str(args))
+                if nothashable == "raise":
+                    raise TypeError("Not hashable: %s" % str(args))
                 else:
-                    print('not hashable', args)
+                    print("not hashable", args)
                     self.nev += 1
                     return self.func(*args, **kwargs)
         else:
