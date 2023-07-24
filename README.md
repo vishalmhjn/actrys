@@ -5,11 +5,11 @@
 <b>actrys</b> is a Python-based platform to calibrate the traffic simulations in SUMO.
 
 <p align="center">
-<img src="resources/munich_traffic_flows.gif" alt="traffic_visualization" width="350" align="center"/>
+<img src="resources/munich_traffic_flows.gif" alt="traffic_visualization" width="450" align="center"/>
 </p>
 
 <p align="center">
-<img src="resources/munich_network_speeds.gif" alt="traffic_visualization" width="400" align="center"/>
+<img src="resources/munich_network_speeds.gif" alt="traffic_visualization" width="500" align="center"/>
 </p>
 
 ## Overview
