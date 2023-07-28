@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 
 def gof_eval(data, data_simulated, estimator="rmsn"):
@@ -61,15 +62,25 @@ def median_gof_eval(data, data_simulated, estimator="rmsn"):
     return gof_val
 
 
-def squared_deviation(data, data_simulated, which_metric="sq_smape"):
+def squared_deviation(data, data_simulated, which_metric="scaled_rmse"):
     """Squared deviation for use in W-SPSA algorithm"""
 
     assert data.shape == data_simulated.shape
+
     if which_metric == "sq_smape":
         diff = (
             (data + 1e-11)
             * (data - data_simulated) ** 2
             / (0.5 * np.abs(data + data_simulated + 1e-8))
+        )
+    elif which_metric == "scaled_rmse":
+        scaler = StandardScaler()
+        scaler.fit(data.reshape(-1, 1))
+        scaled_data = scaler.transform(data.reshape(-1, 1))
+        scaled_data_simulated = scaler.transform(data_simulated.reshape(-1, 1))
+        diff = np.sqrt(
+            (scaled_data.flatten() - scaled_data_simulated.flatten()) ** 2
+            / len(scaled_data)
         )
     elif which_metric == "composite":
         pass
@@ -77,6 +88,18 @@ def squared_deviation(data, data_simulated, which_metric="sq_smape"):
 
 
 if __name__ == "__main__":
-    td = np.array([2, 4, 5, 6, 7])
+    td = np.array([2, 4, 5, 4, 7])
     sd = np.array([2, 4, 5, 8, 9])
-    print(gof_eval(td, sd))
+    print(squared_deviation(td, sd))
+
+    td = np.array([20, 423, 500, 100, 731])
+    sd = np.array([12, 242, 531, 84, 921])
+    print(squared_deviation(td, sd))
+
+    td = np.array([2, 4, 5, 4, 7])
+    sd = np.array([2, 4, 5, 8, 9])
+    print(squared_deviation(td, sd, which_metric="sq_smape"))
+
+    td = np.array([20, 423, 500, 100, 731])
+    sd = np.array([12, 242, 531, 84, 921])
+    print(squared_deviation(td, sd, which_metric="sq_smape"))

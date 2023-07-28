@@ -717,7 +717,9 @@ def minimize_W_SPSA(
                     )
                 pos_perturb = list_perturb[0]
                 neg_perturb = list_perturb[1]
-                grad = w_matrix @ (pos_perturb - neg_perturb) / (2 * ck * delta)
+                grad = (
+                    w_matrix @ (pos_perturb - neg_perturb) / (2 * ck * (x + 1) * delta)
+                )
                 save_grad.append(grad)
         grad = np.mean(save_grad, axis=0)
 
