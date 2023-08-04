@@ -75,20 +75,36 @@ def squared_deviation(data, data_simulated, which_metric="scaled_weighted_geh"):
             data_simulated.reshape(-1, 1)
         ).flatten()
 
-    elif which_metric == "scaled_weighted_geh":
         diff = (
             (scaled_data + 1e-11)
             * (scaled_data - scaled_data_simulated) ** 2
             / (0.5 * np.abs(scaled_data + scaled_data_simulated + 1e-11))
         )
+
+    elif which_metric == "scaled_weighted_geh":
+        scaled_data = data / np.max(data)
+        scaled_data_simulated = data_simulated / np.max(data)
+        diff = (
+            (scaled_data + 1e-11)
+            * (scaled_data - scaled_data_simulated) ** 2
+            / (0.5 * np.abs(scaled_data + scaled_data_simulated + 1e-11))
+        )
+    elif which_metric == "unweighted_geh":
+        diff = (
+            (data + 1e-11)
+            * (data - data_simulated) ** 2
+            / (0.5 * np.abs(data + data_simulated + 1e-11))
+        )
     elif which_metric == "standardized_rmse":
         scaler = StandardScaler()
-        scaler.fit(data.reshape(-1, 1)).flatten()
+        scaler.fit(data.reshape(-1, 1))
         scaled_data = scaler.transform(data.reshape(-1, 1)).flatten()
-        scaled_data_simulated = scaler.transform(data_simulated.reshape(-1, 1))
+        scaled_data_simulated = scaler.transform(
+            data_simulated.reshape(-1, 1)
+        ).flatten()
         diff = np.sqrt((scaled_data - scaled_data_simulated) ** 2 / len(scaled_data))
-    elif which_metric == "composite":
-        pass
+    else:
+        raise ("Enter a valid metric")
     return diff
 
 
@@ -96,15 +112,6 @@ if __name__ == "__main__":
     td = np.array([2, 4, 5, 4, 7])
     sd = np.array([2, 4, 5, 8, 9])
     print(squared_deviation(td, sd))
-
-    td = np.array([20, 423, 500, 100, 731])
-    sd = np.array([12, 242, 531, 84, 921])
-    print(squared_deviation(td, sd))
-
-    td = np.array([2, 4, 5, 4, 7])
-    sd = np.array([2, 4, 5, 8, 9])
-    print(squared_deviation(td, sd, which_metric="sq_smape"))
-
-    td = np.array([20, 423, 500, 100, 731])
-    sd = np.array([12, 242, 531, 84, 921])
-    print(squared_deviation(td, sd, which_metric="sq_smape"))
+    print(squared_deviation(td, sd, which_metric="standardized_weighted_geh"))
+    print(squared_deviation(td, sd, which_metric="unweighted_geh"))
+    print(squared_deviation(td, sd, which_metric="standardized_rmse"))
