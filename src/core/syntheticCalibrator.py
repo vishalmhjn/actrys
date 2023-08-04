@@ -37,7 +37,6 @@ bagging_run = int(sys.argv[11])
 beta_momentum_param = float(sys.argv[12])
 count_noise = int(sys.argv[13])
 weight_counts = float(sys.argv[14])
-
 weight_od = float(sys.argv[15])
 weight_speed = float(sys.argv[16])
 spsa_autotune = eval(sys.argv[17])
@@ -104,9 +103,10 @@ def objective_function(
 ):
     """This is the objective function which estimates the rmsn between the
     True and Simulaed detector counts
-    TODO add a high cost when the demand value is negative"""
+    """
 
-    X = np.array([int(i) for i in np.where(X < 0, 0, X)])
+    X = np.array([i for i in np.where(X < 0, 0, X)])
+    X = X.astype(int)
     global simulated_counts, simulated_speeds
     simulated_counts, simulated_speeds = synthetic_simulation(
         X, W, traffic_state, interval, num_detectors
@@ -147,36 +147,32 @@ def objective_function(
             sd_counts = np.array([])
         if weight_od != 0:
             unw_sd_od = squared_deviation(X_prior, X)
-            sd_od = weight_od * unw_sd_od / np.mean(unw_sd_od)
+            sd_od = weight_od * unw_sd_od
         else:
             sd_od = np.array([])
         if weight_speed != 0:
             unw_sd_speeds = squared_deviation(
                 speed_init.flatten(), simulated_speeds.flatten()
             )
-            sd_speed = weight_speed * unw_sd_speeds / np.mean(unw_sd_speeds)
+            sd_speed = weight_speed * unw_sd_speeds
         else:
             sd_speed = np.array([])
 
         if sd_counts.size:
-            scaling_factor = np.mean(unw_sd_counts)
             if sd_od.size:
                 if sd_speed.size:
-                    rmsn = np.hstack(
-                        (sd_counts, scaling_factor * sd_od, scaling_factor * sd_speed)
-                    )
+                    rmsn = np.hstack((sd_counts, sd_od, sd_speed))
                 else:
-                    rmsn = np.hstack((sd_counts, scaling_factor * sd_od))
+                    rmsn = np.hstack((sd_counts, sd_od))
             else:
                 if sd_speed.size:
-                    rmsn = np.hstack((sd_counts, scaling_factor * sd_speed))
+                    rmsn = np.hstack((sd_counts, sd_speed))
                 else:
                     rmsn = sd_counts
         else:
             if sd_od.size:
-                scaling_factor = np.mean(unw_sd_od)
                 if sd_speed.size:
-                    rmsn = np.hstack((sd_od, scaling_factor * sd_speed))
+                    rmsn = np.hstack((sd_od, sd_speed))
                 else:
                     rmsn = sd_od
             else:

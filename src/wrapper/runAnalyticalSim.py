@@ -2,15 +2,15 @@
 """
 import subprocess
 
-SPSA_A = 0.000001
+SPSA_A = 0.01
 SPSA_C = 0.01
 SPSA_REPS = 1
 NUM_ITERATIONS = 100
 ONLY_BIAS_CORRECTION = False
 CORRECTION_HEURISTIC_METHOD = "weighted"
 
-BIAS = 0.8
-NOISE = 20
+BIAS = 0.6
+NOISE = 60
 MOMENTUM = 0.7
 
 WEIGHT_PROFILES = (1, 0, 0)
@@ -23,7 +23,7 @@ SCENARIO = "test"
 
 subprocess.run(
     f"python ../core/syntheticCalibrator.py \
-                {CORRECTION_HEURISTIC_METHOD}_50_{BIAS}_{NOISE}_{WEIGHT_PROFILES[0]}_{WEIGHT_PROFILES[1]}_{WEIGHT_PROFILES[2]}_{COUNT_NOISE}_spsareps_{SPSA_REPS} True \
+                {CORRECTION_HEURISTIC_METHOD}4_50_{BIAS}_{NOISE}_{WEIGHT_PROFILES[0]}_{WEIGHT_PROFILES[1]}_{WEIGHT_PROFILES[2]}_{COUNT_NOISE}_spsareps_{SPSA_REPS} True \
                 {NOISE} {BIAS} \
                 {SPSA_A} {SPSA_C} \
                 {SPSA_REPS} {NUM_ITERATIONS} \
