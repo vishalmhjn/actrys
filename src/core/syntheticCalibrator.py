@@ -37,7 +37,6 @@ bagging_run = int(sys.argv[11])
 beta_momentum_param = float(sys.argv[12])
 count_noise = int(sys.argv[13])
 weight_counts = float(sys.argv[14])
-
 weight_od = float(sys.argv[15])
 weight_speed = float(sys.argv[16])
 spsa_autotune = eval(sys.argv[17])
@@ -100,12 +99,14 @@ def objective_function(
     num_detectors,
     weighted=False,
     eval_rmsn=False,
+    which_perturb="positive",
 ):
     """This is the objective function which estimates the rmsn between the
     True and Simulaed detector counts
     """
 
-    X = np.array([int(i) for i in np.where(X < 0, 0, X)])
+    X = np.array([i for i in np.where(X < 0, 0, X)])
+    X = X.astype(int)
     global simulated_counts, simulated_speeds
     simulated_counts, simulated_speeds = synthetic_simulation(
         X, W, traffic_state, interval, num_detectors

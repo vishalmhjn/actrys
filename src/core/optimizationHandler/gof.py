@@ -62,26 +62,31 @@ def median_gof_eval(data, data_simulated, estimator="rmsn"):
     return gof_val
 
 
-def squared_deviation(data, data_simulated, which_metric="scaled_rmse"):
+def squared_deviation(data, data_simulated, which_metric="scaled_weighted_geh"):
     """Squared deviation for use in W-SPSA algorithm"""
 
     assert data.shape == data_simulated.shape
 
-    if which_metric == "sq_smape":
-        diff = (
-            (data + 1e-11)
-            * (data - data_simulated) ** 2
-            / (0.5 * np.abs(data + data_simulated + 1e-8))
-        )
-    elif which_metric == "scaled_rmse":
+    if which_metric == "standardized_weighted_geh":
         scaler = StandardScaler()
         scaler.fit(data.reshape(-1, 1))
-        scaled_data = scaler.transform(data.reshape(-1, 1))
-        scaled_data_simulated = scaler.transform(data_simulated.reshape(-1, 1))
-        diff = np.sqrt(
-            (scaled_data.flatten() - scaled_data_simulated.flatten()) ** 2
-            / len(scaled_data)
+        scaled_data = scaler.transform(data.reshape(-1, 1)).flatten()
+        scaled_data_simulated = scaler.transform(
+            data_simulated.reshape(-1, 1)
+        ).flatten()
+
+    elif which_metric == "scaled_weighted_geh":
+        diff = (
+            (scaled_data + 1e-11)
+            * (scaled_data - scaled_data_simulated) ** 2
+            / (0.5 * np.abs(scaled_data + scaled_data_simulated + 1e-11))
         )
+    elif which_metric == "standardized_rmse":
+        scaler = StandardScaler()
+        scaler.fit(data.reshape(-1, 1)).flatten()
+        scaled_data = scaler.transform(data.reshape(-1, 1)).flatten()
+        scaled_data_simulated = scaler.transform(data_simulated.reshape(-1, 1))
+        diff = np.sqrt((scaled_data - scaled_data_simulated) ** 2 / len(scaled_data))
     elif which_metric == "composite":
         pass
     return diff
