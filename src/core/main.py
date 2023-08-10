@@ -226,6 +226,14 @@ def objective_function(
             + path_simulation_counts[-4:],
             path_simulation_speeds + "_" + which_perturb,
             evaluation_run=eval_rmsn,
+            rerouting_prob=rerouting_prob,
+            tls_tt_pen=tls_tt_pen,
+            meso_minor_pen=meso_minor_pen,
+            rerouting_period=rerouting_period,
+            rerouting_adaptation=rerouting_adaptation,
+            rerouting_adaptation_steps=rerouting_adaptation_steps,
+            meso_tls_flow_penalty=meso_tls_flow_penalty,
+            priority_factor=priority_factor,
         )
 
     # equal weights for counts and demand
@@ -388,7 +396,9 @@ def objective_function_without_simulator(
     True and Simulaed detector counts
     TODO add a high cost when the demand value is negative"""
 
-    X = np.array([int(i) for i in np.where(X < 0, 0, X)])
+    X = np.where(X < 0, 0, X)
+
+    X = X.astype(int)
 
     global simulated_counts, simulated_speeds
     # simulated_counts, simulated_speeds = synthetic_simulation(X, W, traffic_state, interval, num_detectors)
@@ -591,13 +601,13 @@ def black_box_function(
     meso_tls_flow_penalty,
     priority_factor,
 ):
-    rerouting_probability = int(rerouting_probability * 10) / 10
-    rerouting_period = 1 + int(rerouting_period / 10) * 10
-    rerouting_adaptation = 1 + int((rerouting_adaptation) / 10) * 10
-    rerouting_adaptation_steps = int(rerouting_adaptation_steps / 10) * 10
-    meso_minor_pen = int(meso_minor_pen / 10) * 10
-    tls_tt_pen = int(tls_tt_pen * 10) / 10
-    meso_tls_flow_penalty = int(meso_tls_flow_penalty * 10) / 10
+    rerouting_probability = float(rerouting_probability)
+    rerouting_period = 1 + int(rerouting_period)
+    rerouting_adaptation = 1 + int(rerouting_adaptation)
+    rerouting_adaptation_steps = int(rerouting_adaptation_steps)
+    meso_minor_pen = int(meso_minor_pen)
+    tls_tt_pen = float(tls_tt_pen)
+    meso_tls_flow_penalty = float(meso_tls_flow_penalty)
     priority_factor = float(priority_factor)
 
     true_counts, simulated_counts, true_speeds, simulated_speeds = od_to_counts(
@@ -664,7 +674,7 @@ if __name__ == "__main__":
     sim_out_loop = eval(os.environ.get("sim_out_loop"))
 
     init_rerouting_prob = 0.9
-    init_tls_tt_pen = 6
+    init_tls_tt_pen = 6.0
     init_meso_minor_pen = 10
     init_rerouting_period = 30
     init_rerouting_adaptation = 5
@@ -752,6 +762,16 @@ if __name__ == "__main__":
     print("Initial Count " + estimator + ": " + str(rmsn))
     print("Initial Speeds " + estimator + ": " + str(rmsn_speeds))
     for seq in range(0, n_sequential):
+        if seq == 0:
+            rerouting_probability = init_rerouting_prob
+            rerouting_period = init_tls_tt_pen
+            rerouting_adaptation = init_meso_minor_pen
+            rerouting_adaptation_steps = init_rerouting_adaptation
+            meso_minor_pen = init_meso_minor_pen
+            tls_tt_pen = init_tls_tt_pen
+            meso_tls_flow_penalty = init_meso_tls_flow_penalty
+            priority_factor = init_priority_factor
+
         if eval(calibrate_demand):
             if seq == 0:
                 X_OD = np.array(OD_txt_to_dataframe(path=PATH_DEMAND))
@@ -776,6 +796,14 @@ if __name__ == "__main__":
                 path_temp_additional,
                 path_simulation_counts,
                 path_simulation_speeds,
+                rerouting_prob=rerouting_probability,
+                tls_tt_pen=tls_tt_pen,
+                meso_minor_pen=meso_minor_pen,
+                rerouting_period=rerouting_period,
+                rerouting_adaptation=rerouting_adaptation,
+                rerouting_adaptation_steps=rerouting_adaptation_steps,
+                meso_tls_flow_penalty=meso_tls_flow_penalty,
+                priority_factor=priority_factor,
             )
 
             W, A = wspsa_update_wrapper(
@@ -865,6 +893,14 @@ if __name__ == "__main__":
                     path_temp_additional,
                     path_simulation_counts,
                     path_simulation_speeds,
+                    rerouting_prob=rerouting_probability,
+                    tls_tt_penalty=tls_tt_pen,
+                    meso_minor_penalty=meso_minor_pen,
+                    rerouting_period=rerouting_period,
+                    rerouting_adaptation=rerouting_adaptation,
+                    rerouting_adaptation_steps=rerouting_adaptation_steps,
+                    meso_tls_flow_penalty=meso_tls_flow_penalty,
+                    priority_factor=priority_factor,
                 )
 
                 rmsn_c = gof_eval(count_init, sim_corrected_counts, estimator=estimator)
@@ -959,15 +995,6 @@ if __name__ == "__main__":
 
                 W_out = copy.deepcopy(W)
                 W_in = copy.deepcopy(W)
-
-                rerouting_probability = init_rerouting_prob
-                rerouting_period = init_tls_tt_pen
-                rerouting_adaptation = init_meso_minor_pen
-                rerouting_adaptation_steps = init_rerouting_adaptation
-                meso_minor_pen = init_meso_minor_pen
-                tls_tt_pen = init_tls_tt_pen
-                meso_tls_flow_penalty = init_meso_tls_flow_penalty
-                priority_factor = init_priority_factor
 
                 # SPSA parameter tuner
                 if weight_counts != 0:
@@ -1223,6 +1250,14 @@ if __name__ == "__main__":
                     path_temp_additional,
                     path_simulation_counts,
                     path_simulation_speeds,
+                    rerouting_prob=rerouting_probability,
+                    tls_tt_penalty=tls_tt_pen,
+                    meso_minor_penalty=meso_minor_pen,
+                    rerouting_period=rerouting_period,
+                    rerouting_adaptation=rerouting_adaptation,
+                    rerouting_adaptation_steps=rerouting_adaptation_steps,
+                    meso_tls_flow_penalty=meso_tls_flow_penalty,
+                    priority_factor=priority_factor,
                 )
 
                 save_counts = pd.DataFrame(
@@ -1297,7 +1332,7 @@ if __name__ == "__main__":
                 "meso_minor_pen": (0, 60),
                 "tls_tt_pen": (0, 1),
                 "meso_tls_flow_penalty": (0, 1),
-                "priority_factor": (0.0001, 1),
+                "priority_factor": (0.1, 1),
             }
 
             optimizer = BayesianOptimization(
@@ -1322,17 +1357,14 @@ if __name__ == "__main__":
 
             supply_res = optimizer.max["params"]
 
-            rerouting_probability = int(supply_res["rerouting_probability"] * 10) / 10
-            rerouting_period = 1 + int(supply_res["rerouting_period"] / 10) * 10
-            rerouting_adaptation = (
-                1 + int((supply_res["rerouting_adaptation"]) / 10) * 10
-            )
-            rerouting_adaptation_steps = (
-                int(supply_res["rerouting_adaptation_steps"] / 10) * 10
-            )
-            meso_minor_pen = int(supply_res["meso_minor_pen"] / 10) * 10
-            tls_tt_pen = int(supply_res["tls_tt_pen"] * 10) / 10
-            meso_tls_flow_penalty = int(supply_res["meso_tls_flow_penalty"] * 10) / 10
+            rerouting_probability = float(supply_res["rerouting_probability"])
+            rerouting_period = int(supply_res["rerouting_period"])
+            rerouting_adaptation = int((supply_res["rerouting_adaptation"]))
+            rerouting_adaptation_steps = int(supply_res["rerouting_adaptation_steps"])
+            meso_minor_pen = int(supply_res["meso_minor_pen"])
+            tls_tt_pen = float(supply_res["tls_tt_pen"])
+            meso_tls_flow_penalty = float(supply_res["meso_tls_flow_penalty"])
+
             priority_factor = float(supply_res["priority_factor"])
 
             bayes_optim_target_val = abs(optimizer.max["target"])
