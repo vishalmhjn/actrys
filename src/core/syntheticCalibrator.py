@@ -567,7 +567,7 @@ if __name__ == "__main__":
 
         if weight_counts != 0:
             if spsa_autotune == True:
-                pbounds = {"log_spsa_a": (-6, 0), "log_spsa_c": (-2, 1)}
+                pbounds = {"log_spsa_a": (-3, 4), "log_spsa_c": (-2, 1)}
                 bounds_transformer = SequentialDomainReductionTransformer()
                 optimizer = BayesianOptimization(
                     f=spsa_tune_function,
@@ -660,8 +660,6 @@ if __name__ == "__main__":
                 plt.savefig(
                     pre_string
                     + "/results_"
-                    + str(beta_momentum)
-                    + "_"
                     + str(bagging)
                     + "a_"
                     + str(spsa_a)
@@ -694,13 +692,7 @@ if __name__ == "__main__":
                 od_bag_list.append(best_od)
                 save_od = pd.DataFrame({"real": X_OD, "simulated": best_od.flatten()})
                 save_od.to_csv(
-                    pre_string
-                    + "/"
-                    + str(beta_momentum)
-                    + "_"
-                    + str(bagging)
-                    + "_"
-                    + "od.csv",
+                    pre_string + "/" + str(bagging) + "_" + "od.csv",
                     index=None,
                 )
 
@@ -717,8 +709,6 @@ if __name__ == "__main__":
                 plt.savefig(
                     pre_string
                     + "/loss_"
-                    + str(beta_momentum)
-                    + "_"
                     + "a_"
                     + str(spsa_a)
                     + "n_"

@@ -26,9 +26,9 @@ set_spa = os.environ.get("set_spa")
 
 which_algo = os.environ.get("which_algo")
 
-weight_counts = int(os.environ.get("weight_counts"))
-weight_od = int(os.environ.get("weight_od"))
-weight_speed = int(os.environ.get("weight_speed"))
+weight_counts = float(os.environ.get("weight_counts"))
+weight_od = float(os.environ.get("weight_od"))
+weight_speed = float(os.environ.get("weight_speed"))
 bagging_run = int(os.environ.get("bagging_run"))
 
 count_noise_param = int(os.environ.get("count_noise_param"))
