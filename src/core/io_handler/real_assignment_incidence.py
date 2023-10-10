@@ -9,19 +9,39 @@ import pickle
 import subprocess
 import os
 
-from sim_handler.scenario_generator import (
-    TOD_START,
-    TOD_END,
-    WARM_UP_PERIOD,
-    COOL_DOWN_PERIOD,
-    DEMAND_INTERVAL,
-)
-
+from sim_handler.scenario_generator import config
 from io_handler.output_processor import additonal_identifier
 
-period = int(3600 * DEMAND_INTERVAL)
-period_fraction = DEMAND_INTERVAL
+period = int(3600 * config["DEMAND_INTERVAL"])
 trip_impact = 3600
+
+
+def xml_to_csv(input_file):
+    """Convert an XML file to CSV using SUMO's xml2csv tool."""
+    SUMO_HOME = os.getenv("SUMO_HOME")
+    subprocess.run(SUMO_HOME + "/tools/xml/xml2csv.py " + input_file, shell=True)
+
+
+def get_od_pairs_df(path_od_sample):
+    """Get OD pairs dataframe from a sample OD matrix file."""
+    dfod = pd.read_csv(path_od_sample, sep=" ")
+    dfod["od_pair"] = dfod.o.astype("str") + "___" + dfod.d.astype("str")
+    return dfod
+
+
+def get_routes_df(path_routes):
+    """Get routes dataframe from a SUMO route output file."""
+    dfr = pd.read_csv(path_routes[:-3] + "csv", sep=";")
+    dfr.drop_duplicates(subset=["vehicle_id"], keep="last", inplace=True)
+    dfr["od_pair"] = (
+        dfr.vehicle_fromTaz.astype("str") + "___" + dfr.vehicle_toTaz.astype("str")
+    )
+    return dfr
+
+
+def get_trip_summary_df(path_trip_summary):
+    """Get trip summary dataframe from a SUMO trip summary output file."""
+    return pd.read_csv(path_trip_summary + ".csv", sep=";")
 
 
 def generate_detector_incidence(
@@ -39,10 +59,10 @@ def generate_detector_incidence(
     is_synthetic=False,
     binary_rounding=False,
     time_interval=period,
-    t_start=TOD_START * 3600,
-    t_end=TOD_END * 3600,
+    t_start=config["TOD_START"] * 3600,
+    t_end=config["TOD_END"] * 3600,
     t_impact=trip_impact,
-    t_warmup=WARM_UP_PERIOD * 3600,
+    t_warmup=config["WARM_UP_PERIOD"] * 3600,
     do_plot=True,
     do_save=True,
 ):
@@ -115,29 +135,17 @@ def generate_detector_incidence(
     numpy.ndarray
         link incidence matrix
     """
-
-    # print(time_interval)
-    # print("Threshold: "+ str(threshold)+", "+ "Synthetic: "+ str(is_synthetic) + \
-    # 	  "Cut-off: "+ str(threshold_value)+ ", Binary rounding: "+ str(binary_rounding))
-
     SUMO_HOME = os.getenv("SUMO_HOME")
 
-    subprocess.run(SUMO_HOME + "/tools/xml/xml2csv.py " + path_trip_summary, shell=True)
-    subprocess.run(SUMO_HOME + "/tools/xml/xml2csv.py " + path_routes, shell=True)
-    subprocess.run(SUMO_HOME + "/tools/xml/xml2csv.py " + path_additional, shell=True)
+    xml_to_csv(path_trip_summary)
+    xml_to_csv(path_routes)
+    xml_to_csv(path_additional)
 
-    # using sumo OD matrrix file so that the order of ODs is same as the counts
-    dfod = pd.read_csv(path_od_sample, sep=" ")
-    dfod["od_pair"] = dfod.o.astype("str") + "___" + dfod.d.astype("str")
+    dfod = get_od_pairs_df(path_od_sample)
 
-    dfr = pd.read_csv(path_routes[:-3] + "csv", sep=";")
-    dfr.drop_duplicates(subset=["vehicle_id"], keep="last", inplace=True)
-    dft = pd.read_csv(path_trip_summary + ".csv", sep=";")
-    dfr["od_pair"] = (
-        dfr.vehicle_fromTaz.astype("str") + "___" + dfr.vehicle_toTaz.astype("str")
-    )
+    dfr = get_routes_df(path_routes)
+    dft = get_trip_summary_df(path_trip_summary)
 
-    # len(dfr.od_pair.unique())
     df_merge = pd.merge(
         left=dfr, right=dft, left_on="vehicle_id", right_on="tripinfo_id"
     )
@@ -172,7 +180,6 @@ def generate_detector_incidence(
     num_detectors = len(dtd[edge_col].unique())
 
     intervals = range(t_start - t_warmup, t_end, time_interval)  # time_interval
-    print(intervals)
 
     num_od_pairs = len(od_pairs)
     num_intervals = len(intervals)
@@ -258,14 +265,14 @@ def generate_detector_incidence(
     if do_save == True:
         S = scipy.sparse.csr_matrix(
             incidence_weight_array[
-                :, int(t_warmup / (3600 * period_fraction)) * num_detectors :
+                :, int(t_warmup / (3600 * config["DEMAND_INTERVAL"])) * num_detectors :
             ]
         )
         with open(path_output_weight, "wb") as file:
             pickle.dump(S, file)
         S = scipy.sparse.csr_matrix(
             incidence_assignment_array[
-                :, int(t_warmup / (3600 * period_fraction)) * num_detectors :
+                :, int(t_warmup / (3600 * config["DEMAND_INTERVAL"])) * num_detectors :
             ]
         )
         with open(path_output_assignment, "wb") as file:
@@ -273,10 +280,10 @@ def generate_detector_incidence(
 
     return (
         incidence_weight_array[
-            :, int(t_warmup / (3600 * period_fraction)) * num_detectors :
+            :, int(t_warmup / (3600 * config["DEMAND_INTERVAL"])) * num_detectors :
         ],
         incidence_assignment_array[
-            :, int(t_warmup / (3600 * period_fraction)) * num_detectors :
+            :, int(t_warmup / (3600 * config["DEMAND_INTERVAL"])) * num_detectors :
         ],
     )
 

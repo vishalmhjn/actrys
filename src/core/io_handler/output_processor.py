@@ -3,7 +3,7 @@ import pandas as pd
 import subprocess
 import os
 from sim_handler.simulator import PATH_ADDITIONAL
-from sim_handler.scenario_generator import *
+from sim_handler.scenario_generator import config, TOD
 from optimization_handler.gof import gof_eval
 
 PATH_SUMO_TOOLS = os.environ.get("PATH_SUMO_TOOLS")
@@ -14,7 +14,7 @@ PATH_REAL_COUNT = os.environ.get("PATH_REAL_COUNT")
 PATH_OUTPUT_SPEED = os.environ.get("PATH_OUTPUT_SPEED")
 PATH_REAL_SPEED = os.environ.get("PATH_REAL_SPEED")
 
-REAL_COUNT_INTERVAL = DEMAND_INTERVAL
+REAL_COUNT_INTERVAL = config["DEMAND_INTERVAL"]
 
 additonal_identifier = "inductionLoop_id"
 output_identifier = "interval_id"
@@ -60,8 +60,8 @@ def create_synthetic_counts(
     list_hour = []
 
     for hour in np.arange(
-        TOD[0] + WARM_UP_PERIOD,
-        REAL_COUNT_INTERVAL + TOD[-1] - COOL_DOWN_PERIOD,
+        TOD[0] + config["WARM_UP_PERIOD"],
+        REAL_COUNT_INTERVAL + TOD[-1] - config["COOL_DOWN_PERIOD"],
         REAL_COUNT_INTERVAL,
     ):
         temp_simulated = df_simulated_counts[
@@ -126,8 +126,8 @@ def get_true_simulated(
 
     output_vector = np.empty((0, 2), int)
     for hour in np.arange(
-        TOD[0] + WARM_UP_PERIOD,
-        REAL_COUNT_INTERVAL + TOD[-1] - COOL_DOWN_PERIOD,
+        TOD[0] + config["WARM_UP_PERIOD"],
+        REAL_COUNT_INTERVAL + TOD[-1] - config["COOL_DOWN_PERIOD"],
         REAL_COUNT_INTERVAL,
     ):
         list_det = []
@@ -213,8 +213,8 @@ def create_synthetic_speeds(path_additional, path_output_speeds, path_real_speed
     df_additional.edge_detector_id = df_additional.edge_detector_id.astype(str)
 
     for hour in np.arange(
-        TOD[0] + WARM_UP_PERIOD,
-        REAL_COUNT_INTERVAL + TOD[-1] - COOL_DOWN_PERIOD,
+        TOD[0] + config["WARM_UP_PERIOD"],
+        REAL_COUNT_INTERVAL + TOD[-1] - config["COOL_DOWN_PERIOD"],
         REAL_COUNT_INTERVAL,
     ):
         temp_simulated = df_simulated_speeds[
@@ -273,8 +273,8 @@ def get_true_simulated_speeds(
     df_sim = []
 
     for hour in np.arange(
-        TOD[0] + WARM_UP_PERIOD,
-        REAL_COUNT_INTERVAL + TOD[-1] - COOL_DOWN_PERIOD,
+        TOD[0] + config["WARM_UP_PERIOD"],
+        REAL_COUNT_INTERVAL + TOD[-1] - config["COOL_DOWN_PERIOD"],
         REAL_COUNT_INTERVAL,
     ):
         list_det = []

@@ -47,7 +47,7 @@ estimator = os.environ.get("estimator")
 print("Using " + estimator + " for selecting the best fit")
 
 if which_algo == "wspsa":
-    wspsa_thrshold = float(os.environ.get("wspsa_thrshold"))
+    wspsa_thrshold = float(os.environ.get("wspsa_threshold"))
 
 # for decaying the a and c for simulation out-of-loop
 learning_decay_factor = 1.05

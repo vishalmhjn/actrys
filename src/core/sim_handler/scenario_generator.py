@@ -25,6 +25,8 @@ TOD = np.arange(
     config["DEMAND_INTERVAL"],
 )
 
+config["TOD"] = TOD
+
 
 def run_command(cmd_string):
     subprocess.run(cmd_string, shell=True)

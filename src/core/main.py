@@ -15,14 +15,14 @@ from paths import *
 
 from sim_handler.scenario_generator import create_scenario, trip_validator
 from sim_handler.simulator import run_simulation, PATH_ADDITIONAL, copy_additonal
-from sim_handler.scenario_generator import OD_FILE_IDENTIFIER
+from sim_handler.scenario_generator import config
 
 from optimization_handler.gof import gof_eval, squared_deviation
 from optimization_handler.optimizer import SolutionFinder
 
 from io_handler.output_processor import get_true_simulated, create_synthetic_counts
 from io_handler.output_processor import *
-from io_handler.od_formatter import OD_dataframe_to_txt, OD_txt_to_dataframe
+from io_handler.od_formatter import od_dataframe_to_txt, od_txt_to_dataframe
 from io_handler.wspsa_weight_incidence import prepare_weight_matrix
 from io_handler.real_assignment_incidence import generate_detector_incidence
 
@@ -83,7 +83,7 @@ def od_to_counts(
     meso_tls_flow_penalty=0.9,
     priority_factor=0.01,
 ):
-    OD_dataframe_to_txt(path_iter_demand, od_vector, path_base_file=PATH_DEMAND)
+    od_dataframe_to_txt(path_iter_demand, od_vector, path_base_file=PATH_DEMAND)
     #### this step is within the iteration of objective function to reduce the
     #### stochasticity due to the generation of the trips
     create_scenario(path_iter_trips, path_iter_routes, path_iter_demand)
@@ -349,8 +349,10 @@ def objective_function(
 
         global best_rmsn, best_simulated_counts, best_simulated_speeds
         if rmsn < best_rmsn:
-            OD_dataframe_to_txt(
-                pre_string + "/" + OD_FILE_IDENTIFIER + "_best.txt", X, PATH_DEMAND
+            od_dataframe_to_txt(
+                pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_best.txt",
+                X,
+                PATH_DEMAND,
             )
             best_simulated_speeds = simulated_speeds
             best_simulated_counts = simulated_counts
@@ -611,7 +613,7 @@ def black_box_function(
     priority_factor = float(priority_factor)
 
     true_counts, simulated_counts, true_speeds, simulated_speeds = od_to_counts(
-        pre_string + "/" + OD_FILE_IDENTIFIER + "_best.txt",
+        pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_best.txt",
         best_od,
         path_trips,
         path_routes,
@@ -694,8 +696,8 @@ if __name__ == "__main__":
             path_temp_additional,
             routing_how="reroute",
             rerouting_prob=init_rerouting_prob,
-            tls_tt_pen=init_tls_tt_pen,
-            meso_minor_pen=init_meso_minor_pen,
+            tls_tt_penalty=init_tls_tt_pen,
+            meso_minor_penalty=init_meso_minor_pen,
             rerouting_period=init_rerouting_period,
             rerouting_adaptation=init_rerouting_adaptation,
             rerouting_adaptation_steps=init_rerouting_adaptation_steps,
@@ -774,7 +776,7 @@ if __name__ == "__main__":
 
         if eval(calibrate_demand):
             if seq == 0:
-                X_OD = np.array(OD_txt_to_dataframe(path=PATH_DEMAND))
+                X_OD = np.array(od_txt_to_dataframe(path=PATH_DEMAND))
                 X_base_true = copy.deepcopy(X_OD)
                 # add artifical noise and bias to the  demand matrix
                 initial_solution = np.array(
@@ -789,7 +791,7 @@ if __name__ == "__main__":
                 init = np.where(initial_solution < 0, 0, initial_solution)
 
             count_init, sim_init_counts, speeds_init, sim_init_speeds = od_to_counts(
-                pre_string + "/" + OD_FILE_IDENTIFIER + "_init.txt",
+                pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_init.txt",
                 init,
                 path_trips,
                 path_routes,
@@ -886,7 +888,7 @@ if __name__ == "__main__":
                     speeds_init,
                     sim_corrected_speeds,
                 ) = od_to_counts(
-                    pre_string + "/" + OD_FILE_IDENTIFIER + "_init.txt",
+                    pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_init.txt",
                     corrected_od,
                     path_trips,
                     path_routes,
@@ -1090,14 +1092,20 @@ if __name__ == "__main__":
 
                             init_iter = res["x"]
 
-                            OD_dataframe_to_txt(
-                                pre_string + "/" + OD_FILE_IDENTIFIER + "_n.txt",
+                            od_dataframe_to_txt(
+                                pre_string
+                                + "/"
+                                + config["OD_FILE_IDENTIFIER"]
+                                + "_n.txt",
                                 init_iter,
                                 path_base_file=PATH_DEMAND,
                             )
 
                             _, _, _, _ = od_to_counts(
-                                pre_string + "/" + OD_FILE_IDENTIFIER + "_n.txt",
+                                pre_string
+                                + "/"
+                                + config["OD_FILE_IDENTIFIER"]
+                                + "_n.txt",
                                 init_iter,
                                 path_trips,
                                 path_routes,
@@ -1243,7 +1251,7 @@ if __name__ == "__main__":
                 )
 
                 _, sim_final_counts, _, sim_final_speeds = od_to_counts(
-                    pre_string + "/" + OD_FILE_IDENTIFIER + "_mean.txt",
+                    pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_mean.txt",
                     od_mean,
                     path_trips,
                     path_routes,
@@ -1314,7 +1322,7 @@ if __name__ == "__main__":
                     + "od.csv",
                     index=None,
                 )
-                # PATH_DEMAND = pre_string +"/"+OD_FILE_IDENTIFIER+"_mean.txt"
+                # PATH_DEMAND = pre_string +"/"+config["OD_FILE_IDENTIFIER"]+"_mean.txt"
 
         od_mean = pd.read_csv(
             pre_string + "/mean_" + str(seq) + "_" + str(bagging_run) + "_" + "od.csv"
@@ -1375,7 +1383,7 @@ if __name__ == "__main__":
             res_dict["f_val_supply"].append(bayes_optim_target_val)
 
         _, sim_final_counts, _, sim_final_speeds = od_to_counts(
-            pre_string + "/" + OD_FILE_IDENTIFIER + "_mean.txt",
+            pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_mean.txt",
             od_mean,
             path_trips,
             path_routes,

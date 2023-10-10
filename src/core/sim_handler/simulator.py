@@ -1,7 +1,7 @@
 import subprocess
 import os
 from shutil import copyfile
-from sim_handler.scenario_generator import *
+from sim_handler.scenario_generator import config, TOD
 
 # Constants for command-line options
 ROUTING_HOW_REROUTE = "reroute"
@@ -36,7 +36,7 @@ def run_simulation(
     priority_factor=0,
 ):
     cmd_string = (
-        f"sumo -n {PATH_NETWORK} -r {path_trips} --additional-files {path_temp_additional} "
+        f'sumo -n {config["PATH_NETWORK"]} -r {path_trips} --additional-files {path_temp_additional} '
         f"-b {TOD[0] * 3600} -e {(1 + TOD[-1]) * 3600} --no-step-log"
     )
 
@@ -53,14 +53,14 @@ def run_simulation(
 
         if evaluation_run:
             cmd_string += (
-                f" --summary ../../{SCENARIO}/{temp_scenario_name}/summary "
-                f"--tripinfo-output ../../{SCENARIO}/{temp_scenario_name}/trips_output "
-                f"--vehroute-output ../../{SCENARIO}/{temp_scenario_name}/routes.rou.xml"
+                f' --summary ../../{config["SCENARIO"]}/{config["temp_scenario_name"]}/summary '
+                f'--tripinfo-output ../../{config["SCENARIO"]}/{config["temp_scenario_name"]}/trips_output '
+                f'--vehroute-output ../../{config["SCENARIO"]}/{config["temp_scenario_name"]}/routes.rou.xml'
             )
 
     else:
         cmd_string = (
-            f"sumo -n {PATH_NETWORK} -r {path_routes} --additional-files {path_temp_additional} "
+            f'sumo -n {config["PATH_NETWORK"]} -r {path_routes} --additional-files {path_temp_additional} '
             f"-b {TOD[0] * 3600} -e {(1 + TOD[-1]) * 3600}"
         )
 
@@ -69,7 +69,9 @@ def run_simulation(
 
 if __name__ == "__main__":
     print(TOD)
-    path_temp_additional = f"../../{SCENARIO}/{temp_scenario_name}/additional.add.xml"
+    path_temp_additional = (
+        f'../../{config["SCENARIO"]}/{config["temp_scenario_name"]}/additional.add.xml'
+    )
 
     # Define PATH_TRIPS and PATH_ROUTES here
     PATH_TRIPS = "your_trips_path"
