@@ -1,75 +1,78 @@
-"""Wrapper file
-"""
 import subprocess
 import sys
 
-SCENARIO = sys.argv[1]
 
-BIAS = 0.6
-NOISE = 20
-
-SPSA_A = 0.00001
-SPSA_C = 0.01
-SPSA_A_OUT = 1
-SPSA_C_OUT = 1
-SPSA_REPS = 1
-NUM_ITERATIONS = 1
-SIM_OUT_ITERATIONS = 1
-SIM_IN_ITERATIONS = 5
-WSPSA_THRESHOLD = 0.01
-
-ESTIMATOR = "wmape"
-
-BIAS_CORRECTION_METHOD = "naive"
-
-DEMAND_INTERVAL = 3600
-
-CALIBRATE_DEMAND = True
-CALIBRATE_SUPPLY = True
-SET_SPA = False
-
-BAGGING_RUNS = 3
-MOMENTUM_BETA = 0.3
-AUTO_TUNE_SPSA = True
-BAGGING = BAGGING_RUNS
-CORRECTION_HEURISTIC = True
-ONLY_BIAS_CORRECTION = False
-BIAS_CORRECTION_TYPE = BIAS_CORRECTION_METHOD
-
-for i, (WEIGHT_PROFILES, COUNT_NOISE) in enumerate(
-    zip(
-        [(10, 0, 0)],
-        [
-            0,
-        ],
-    )
+def run_calibration_scenario(
+    scenario,
+    bias=1,
+    noise=20,
+    spsa_a=0.001,
+    spsa_c=0.01,
+    spsa_a_out=1,
+    spsa_c_out=1,
+    spsa_reps=1,
+    num_iterations=1,
+    sim_out_iterations=1,
+    sim_in_iterations=5,
+    wspsa_threshold=0.01,
+    estimator="rmsn",
+    bias_correction_method="naive",
+    demand_interval=3600,
+    calibrate_demand=True,
+    calibrate_supply=True,
+    set_spa=False,
+    bagging_runs=3,
+    momentum_beta=0.3,
+    auto_tune_spsa=True,
+    correction_heuristic=True,
+    only_bias_correction=False,
+    weight_profiles=[(1, 0, 0)],
+    count_noise=[0],
 ):
-    subprocess.run(
-        f"sh wrapper.sh \
-                    free_{DEMAND_INTERVAL}_{BIAS}_{NOISE}_{WEIGHT_PROFILES[0]}_{WEIGHT_PROFILES[1]}_{WEIGHT_PROFILES[2]}_{COUNT_NOISE}_sequential_{BIAS_CORRECTION_TYPE}_2a \
-                    True False \
-                    {NOISE} {BIAS} \
-                    {SPSA_A} {SPSA_C} \
-                    {SPSA_A_OUT} {SPSA_C_OUT} \
-                    {SPSA_REPS} \
-                    True False \
-                    {NUM_ITERATIONS} {SIM_IN_ITERATIONS} {SIM_OUT_ITERATIONS} \
-                    wspsa {WSPSA_THRESHOLD} \
-                    {CALIBRATE_SUPPLY} {CALIBRATE_DEMAND} \
-                    {SET_SPA} \
-                    {ESTIMATOR} \
-                    {SCENARIO} \
-                    {WEIGHT_PROFILES[0]} \
-                    {WEIGHT_PROFILES[1]} \
-                    {WEIGHT_PROFILES[2]} \
-                    {BAGGING} \
-                    {COUNT_NOISE} \
-                    {CORRECTION_HEURISTIC} \
-                    {AUTO_TUNE_SPSA} \
-                    {MOMENTUM_BETA} \
-                    {DEMAND_INTERVAL} \
-                    {ONLY_BIAS_CORRECTION} \
-                    {BIAS_CORRECTION_TYPE}",
-        shell=True,
-        check=True,
-    )
+    for i, (weight_profile, count_noise_val) in enumerate(
+        zip(weight_profiles, count_noise)
+    ):
+        subprocess.run(
+            f"sh wrapper.sh \
+            free_{demand_interval}_{bias}_{noise}_{weight_profile[0]}_{weight_profile[1]}_{weight_profile[2]}_{count_noise_val}_sequential_{bias_correction_method}_2a \
+            True False \
+            {noise} {bias} \
+            {spsa_a} {spsa_c} \
+            {spsa_a_out} {spsa_c_out} \
+            {spsa_reps} \
+            True False \
+            {num_iterations} {sim_in_iterations} {sim_out_iterations} \
+            wspsa {wspsa_threshold} \
+            {calibrate_supply} {calibrate_demand} \
+            {set_spa} \
+            {estimator} \
+            {scenario} \
+            {weight_profile[0]} \
+            {weight_profile[1]} \
+            {weight_profile[2]} \
+            {bagging_runs} \
+            {count_noise_val} \
+            {correction_heuristic} \
+            {auto_tune_spsa} \
+            {momentum_beta} \
+            {demand_interval} \
+            {only_bias_correction} \
+            {bias_correction_method}",
+            shell=True,
+            check=True,
+        )
+
+
+if __name__ == "__main__":
+    SCENARIO = sys.argv[1]
+
+    # Define your default parameters here
+    DEFAULT_PARAMS = {
+        "scenario": SCENARIO,
+        "bias": 1,
+        "noise": 20,
+        # Add other default parameters here
+    }
+
+    # You can override default parameters as needed
+    run_calibration_scenario(**DEFAULT_PARAMS)
