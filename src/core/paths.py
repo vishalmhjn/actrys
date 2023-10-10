@@ -1,7 +1,7 @@
 import os
-from simHandler.scenarioGenerator import file_manager
-from simHandler.scenarioGenerator import OD_FILE_IDENTIFIER
-from simHandler.simulator import PATH_ADDITIONAL
+from sim_handler.scenario_generator import file_manager
+from sim_handler.scenario_generator import OD_FILE_IDENTIFIER
+from sim_handler.simulator import PATH_ADDITIONAL
 
 # folder paths
 temp_folder_name = os.environ.get("temp_folder_name")
@@ -13,6 +13,10 @@ PATH_DEMAND = os.environ.get("PATH_DEMAND")
 PATH_REAL_COUNT = os.environ.get("PATH_REAL_COUNT")
 PATH_REAL_SPEED = os.environ.get("PATH_REAL_SPEED")
 DEMAND_DURATION = int(os.environ.get("DEMAND_INTERVAL"))
+
+FILE_MATCH_DETECTORS = os.environ.get("FILE_MATCH_DETECTORS")
+FILE_REAL_COUNTS = os.environ.get("FILE_REAL_COUNTS")
+FILE_REAL_SPEEDS = os.environ.get("FILE_REAL_SPEEDS")
 
 pre_string = "../../" + SCENARIO + "/" + temp_folder_name
 path_temp_demand = pre_string + "/" + OD_FILE_IDENTIFIER + "_n.txt"

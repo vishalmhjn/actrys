@@ -47,7 +47,7 @@ for i, (WEIGHT_PROFILES, COUNT_NOISE) in enumerate(
     subprocess.run(
         f"sh wrapper.sh \
                     free_{DEMAND_INTERVAL}_{BIAS}_{NOISE}_{WEIGHT_PROFILES[0]}_{WEIGHT_PROFILES[1]}_{WEIGHT_PROFILES[2]}_{COUNT_NOISE}_sequential_{BIAS_CORRECTION_TYPE}_2a \
-                    True True \
+                    True False \
                     {NOISE} {BIAS} \
                     {SPSA_A} {SPSA_C} \
                     {SPSA_A_OUT} {SPSA_C_OUT} \

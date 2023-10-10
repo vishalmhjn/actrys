@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import subprocess
 import os
-from simHandler.simulator import PATH_ADDITIONAL
-from simHandler.scenarioGenerator import *
-from optimizationHandler.gof import gof_eval
+from sim_handler.simulator import PATH_ADDITIONAL
+from sim_handler.scenario_generator import *
+from optimization_handler.gof import gof_eval
 
 PATH_SUMO_TOOLS = os.environ.get("PATH_SUMO_TOOLS")
 
@@ -15,6 +15,9 @@ PATH_OUTPUT_SPEED = os.environ.get("PATH_OUTPUT_SPEED")
 PATH_REAL_SPEED = os.environ.get("PATH_REAL_SPEED")
 
 REAL_COUNT_INTERVAL = DEMAND_INTERVAL
+
+additonal_identifier = "inductionLoop_id"
+output_identifier = "interval_id"
 
 
 def add_noise(x, perc_var, mu=1):
@@ -47,7 +50,7 @@ def create_synthetic_counts(
 
     df_additional = pd.read_csv(path_additional[:-3] + "csv", sep=";")
 
-    temp = df_additional[["e1Detector_id"]]
+    temp = df_additional[[additonal_identifier]]
     df_additional = df_additional[~temp.isnull().any(axis=1)]
 
     df_simulated_counts = pd.read_csv(path_output_counts[:-3] + "csv", sep=";")
@@ -71,13 +74,13 @@ def create_synthetic_counts(
         final = pd.merge(
             df_additional,
             temp_simulated,
-            left_on="e1Detector_id",
-            right_on="interval_id",
+            left_on=additonal_identifier,
+            right_on=output_identifier,
         )
 
-        final = final.groupby(["e1Detector_id"]).sum().reset_index()
-        final["edge_detector_id"] = final["e1Detector_id"].apply(
-            lambda x: x.split("_")[1]
+        final = final.groupby([additonal_identifier]).sum().reset_index()
+        final["edge_detector_id"] = final[additonal_identifier].apply(
+            lambda x: x.split("_")[-2]
         )
         if sim_type == "meso":
             final = final.groupby(["edge_detector_id"]).mean().reset_index()
@@ -142,7 +145,7 @@ def get_true_simulated(
 
         temp_simulated = temp_simulated.groupby(["interval_id"]).sum().reset_index()
 
-        detector_ids = temp_simulated["interval_id"].apply(lambda x: x.split("_")[1])
+        detector_ids = temp_simulated["interval_id"].apply(lambda x: x.split("_")[-2])
         temp_simulated.loc[:, "det_id"] = detector_ids
         list_det.extend(list(temp_simulated.det_id))
         list_count.extend(list(temp_simulated["interval_entered"]))
@@ -193,10 +196,10 @@ def create_synthetic_speeds(path_additional, path_output_speeds, path_real_speed
 
     df_additional = pd.read_csv(path_additional[:-3] + "csv", sep=";")
 
-    temp = df_additional[["e1Detector_id"]]
+    temp = df_additional[[additonal_identifier]]
     df_additional = df_additional[~temp.isnull().any(axis=1)]
-    df_additional["edge_detector_id"] = df_additional["e1Detector_id"].apply(
-        lambda x: x.split("_")[1]
+    df_additional["edge_detector_id"] = df_additional[additonal_identifier].apply(
+        lambda x: x.split("_")[-2]
     )
     df_additional.drop_duplicates(subset="edge_detector_id", inplace=True)
     df_additional.reset_index(inplace=True, drop=True)

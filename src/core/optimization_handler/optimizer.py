@@ -1,5 +1,5 @@
 from scipy import optimize
-import optimizationHandler.noisyOpt as noisyopt
+import optimization_handler.noisyOpt as noisyopt
 
 import platform
 

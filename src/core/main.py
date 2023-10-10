@@ -13,18 +13,18 @@ import utilities
 from params import *
 from paths import *
 
-from simHandler.scenarioGenerator import create_scenario, trip_validator
-from simHandler.simulator import run_simulation, PATH_ADDITIONAL, copy_additonal
-from simHandler.scenarioGenerator import OD_FILE_IDENTIFIER
+from sim_handler.scenario_generator import create_scenario, trip_validator
+from sim_handler.simulator import run_simulation, PATH_ADDITIONAL, copy_additonal
+from sim_handler.scenario_generator import OD_FILE_IDENTIFIER
 
-from optimizationHandler.gof import gof_eval, squared_deviation
-from optimizationHandler.optimizer import SolutionFinder
+from optimization_handler.gof import gof_eval, squared_deviation
+from optimization_handler.optimizer import SolutionFinder
 
-from ioHandler.outputProcessor import get_true_simulated, create_synthetic_counts
-from ioHandler.outputProcessor import *
-from ioHandler.odFormatter import OD_dataframe_to_txt, OD_txt_to_dataframe
-from ioHandler.wspsaWeightIncidence import prepare_weight_matrix
-from ioHandler.realAssignmentIncidence import generate_detector_incidence
+from io_handler.output_processor import get_true_simulated, create_synthetic_counts
+from io_handler.output_processor import *
+from io_handler.od_formatter import OD_dataframe_to_txt, OD_txt_to_dataframe
+from io_handler.wspsa_weight_incidence import prepare_weight_matrix
+from io_handler.real_assignment_incidence import generate_detector_incidence
 
 from bayes_opt import BayesianOptimization
 from bayes_opt.logger import JSONLogger
@@ -721,9 +721,9 @@ if __name__ == "__main__":
         det_counts_for_weights = ""
     else:
         # path to real - observed data
-        det_counts_for_weights = ""
-        counts_file = ""
-        speed_file = ""
+        det_counts_for_weights = FILE_MATCH_DETECTORS
+        counts_file = FILE_REAL_COUNTS
+        speed_file = FILE_REAL_SPEEDS
 
     if not synthetic_counts:
         df_real = pd.read_csv(counts_file)

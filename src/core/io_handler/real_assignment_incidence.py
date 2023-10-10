@@ -9,13 +9,15 @@ import pickle
 import subprocess
 import os
 
-from simHandler.scenarioGenerator import (
+from sim_handler.scenario_generator import (
     TOD_START,
     TOD_END,
     WARM_UP_PERIOD,
     COOL_DOWN_PERIOD,
     DEMAND_INTERVAL,
 )
+
+from io_handler.output_processor import additonal_identifier
 
 period = int(3600 * DEMAND_INTERVAL)
 period_fraction = DEMAND_INTERVAL
@@ -155,17 +157,16 @@ def generate_detector_incidence(
     if is_synthetic:
         edge_col = "edge_id"
         dtd = pd.read_csv(path_additional[:-3] + "csv", sep=";")
-        dtd.dropna(subset=["e1Detector_id"], inplace=True)
-        dtd[edge_col] = dtd["e1Detector_id"].apply(lambda x: x.split("_")[1])
+        dtd.dropna(subset=[additonal_identifier], inplace=True)
+        dtd[edge_col] = dtd[additonal_identifier].apply(lambda x: x.split("_")[1])
     else:
         edge_col = "det_id"
         dtd = pd.read_csv(path_true_count)
         # dtd_real_vs_sim = pd.read_csv(Paths['det_counts'])
         # dtd = dtd[dtd[edge_col].isin(dtd_real_vs_sim[edge_col])]
 
-        if scenario == "composite_scenario_munich":
-            dtd_macthing = pd.read_csv(path_match_detectors)
-            dtd = dtd[dtd[edge_col].isin(dtd_macthing["det_id"])]
+        dtd_macthing = pd.read_csv(path_match_detectors)
+        dtd = dtd[dtd[edge_col].isin(dtd_macthing["det_id"])]
 
     od_pairs = dfod.od_pair.unique()
     num_detectors = len(dtd[edge_col].unique())
