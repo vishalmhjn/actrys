@@ -4,10 +4,10 @@ import sys
 
 def run_calibration_scenario(
     scenario,
-    bias=1,
-    noise=20,
-    spsa_a=0.001,
-    spsa_c=0.01,
+    bias=0.7,
+    noise=0,
+    spsa_a=0.1,
+    spsa_c=1,
     spsa_a_out=1,
     spsa_c_out=1,
     spsa_reps=1,
@@ -15,10 +15,10 @@ def run_calibration_scenario(
     sim_out_iterations=1,
     sim_in_iterations=5,
     wspsa_threshold=0.01,
-    estimator="rmsn",
+    estimator="wmape",
     bias_correction_method="naive",
     demand_interval=3600,
-    calibrate_demand=True,
+    calibrate_demand=False,
     calibrate_supply=True,
     set_spa=False,
     bagging_runs=3,
@@ -26,7 +26,7 @@ def run_calibration_scenario(
     auto_tune_spsa=True,
     correction_heuristic=True,
     only_bias_correction=False,
-    weight_profiles=[(1, 0, 0)],
+    weight_profiles=[(0.9, 0.1, 0)],
     count_noise=[0],
 ):
     for i, (weight_profile, count_noise_val) in enumerate(

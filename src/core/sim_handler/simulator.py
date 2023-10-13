@@ -15,7 +15,7 @@ def call_sumo(cmd_string):
     subprocess.run(cmd_string + " --mesosim --no-warnings", shell=True)  # --verbose
 
 
-def copy_additonal(PATH_ORIG_ADDITIONAL, path_temp):
+def copy_additional(PATH_ORIG_ADDITIONAL, path_temp):
     copyfile(PATH_ORIG_ADDITIONAL, path_temp)
 
 
@@ -26,15 +26,35 @@ def run_simulation(
     evaluation_run=True,
     routing_how=ROUTING_HOW_REROUTE,
     routing_threads=16,
-    rerouting_prob=0.5,
-    rerouting_period=50,
-    rerouting_adaptation=16,
-    rerouting_adaptation_steps=180,
-    tls_tt_penalty=0,
-    meso_minor_penalty=0,
-    meso_tls_flow_penalty=0,
-    priority_factor=0,
+    supply_params=None,
 ):
+    # Set default values for parameters
+    rerouting_prob = 0.5
+    rerouting_period = 50
+    rerouting_adaptation = 16
+    rerouting_adaptation_steps = 180
+    tls_tt_penalty = 0
+    meso_minor_penalty = 0
+    meso_tls_flow_penalty = 0
+    priority_factor = 0
+
+    # Update parameters from the initial_params dictionary if provided
+    if supply_params:
+        rerouting_prob = supply_params.get("rerouting_prob", rerouting_prob)
+        rerouting_period = supply_params.get("rerouting_period", rerouting_period)
+        rerouting_adaptation = supply_params.get(
+            "rerouting_adaptation", rerouting_adaptation
+        )
+        rerouting_adaptation_steps = supply_params.get(
+            "rerouting_adaptation_steps", rerouting_adaptation_steps
+        )
+        tls_tt_penalty = supply_params.get("tls_tt_penalty", tls_tt_penalty)
+        meso_minor_penalty = supply_params.get("meso_minor_penalty", meso_minor_penalty)
+        meso_tls_flow_penalty = supply_params.get(
+            "meso_tls_flow_penalty", meso_tls_flow_penalty
+        )
+        priority_factor = supply_params.get("priority_factor", priority_factor)
+
     cmd_string = (
         f'sumo -n {config["PATH_NETWORK"]} -r {path_trips} --additional-files {path_temp_additional} '
         f"-b {TOD[0] * 3600} -e {(1 + TOD[-1]) * 3600} --no-step-log"
