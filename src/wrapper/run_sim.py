@@ -27,11 +27,11 @@ def run_calibration_scenario(
     auto_tune_spsa=True,
     correction_heuristic=True,
     only_bias_correction=False,
-    weight_profiles=[(0.9, 0.1, 0)],
-    count_noise=[0],
+    weight_profiles=(0.9, 0.1, 0),
+    count_noise=(0),
 ):
-    for i, (weight_profile, count_noise_val) in enumerate(
-        zip(weight_profiles, count_noise)
+    for _, (weight_profile, count_noise_val) in enumerate(
+        zip([weight_profiles], [count_noise])
     ):
         subprocess.run(
             f"sh wrapper.sh \
