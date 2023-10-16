@@ -1,31 +1,30 @@
-import sys
 import os
-import copy
+import sys
 from datetime import datetime
+import copy
+import json
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import json
-
-import utilities
 
 from params import *
 from paths import *
+import utilities
+from optimization_handler.optimizer import SolutionFinder
+from optimization_handler.gof import gof_eval, squared_deviation
+from io_handler.output_processor import get_true_simulated, create_synthetic_counts
 
-from simHandler.scenarioGenerator import create_scenario, trip_validator
-from simHandler.simulator import run_simulation, PATH_ADDITIONAL, copy_additonal
-from simHandler.scenarioGenerator import OD_FILE_IDENTIFIER
-
-from optimizationHandler.gof import gof_eval, squared_deviation
-from optimizationHandler.optimizer import SolutionFinder
-
-from ioHandler.outputProcessor import get_true_simulated, create_synthetic_counts
-from ioHandler.outputProcessor import *
-from ioHandler.odFormatter import OD_dataframe_to_txt, OD_txt_to_dataframe
-from ioHandler.wspsaWeightIncidence import prepare_weight_matrix
-from ioHandler.realAssignmentIncidence import generate_detector_incidence
-
+from io_handler.od_formatter import (
+    od_dataframe_to_txt,
+    od_txt_to_dataframe,
+)
+from io_handler.output_processor import *
+from io_handler.wspsa_weight_incidence import prepare_weight_matrix
+from io_handler.real_assignment_incidence import generate_detector_incidence
+from sim_handler.scenario_generator import create_scenario, trip_validator
+from sim_handler.simulator import run_simulation, PATH_ADDITIONAL, copy_additional
+from sim_handler.scenario_generator import config
 from bayes_opt import BayesianOptimization
 from bayes_opt.logger import JSONLogger
 from bayes_opt.event import Events
@@ -33,15 +32,16 @@ from bayes_opt.util import load_logs
 
 timestr = str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
 
-res_dict = dict()
-res_dict["f_val"] = []
-res_dict["f_val_supply"] = []
-res_dict["count_val"] = []
-res_dict["speed_val"] = []
-res_dict["od_val"] = []
-res_dict["best_supply_count_rmsn"] = 100
+res_dict = {
+    "f_val": [],
+    "f_val_supply": [],
+    "count_val": [],
+    "speed_val": [],
+    "od_val": [],
+    "best_supply_count_rmsn": 100,
+}
 
-best_rmsn = 10000000000
+best_gof = 10000000000
 best_od = []
 best_simulated_speeds = 0
 best_simulated_counts = 0
@@ -52,13 +52,33 @@ stochastic_solution_counter = 0
 
 
 def save_params(d, params):
+    """
+    Save the values of specified parameters to a dictionary.
+
+    Parameters:
+    - d (dict): The dictionary to store parameter values.
+    - params (list): A list of parameter names to save.
+
+    Returns:
+    dict: The dictionary with parameter values.
+    """
     for param in params:
         d[str(param)] = eval(param)
     return d
 
 
 def add_noise(x, perc_var, mu=1):
-    """Add noise to a synthetic data"""
+    """
+    Add noise to a dataset.
+
+    Parameters:
+    - x (list): The dataset to which noise will be added.
+    - perc_var (float): The percentage of variation to apply as noise.
+    - mu (float, optional): The mean of the noise. Default is 1.
+
+    Returns:
+    list: The dataset with added noise.
+    """
     noisy_od = []
     for i in x:
         noisy_od.append(int(mu * i) + int(np.random.randn() * perc_var * i))
@@ -73,19 +93,30 @@ def od_to_counts(
     path_temp_additional,
     path_iter_simulation_counts,
     path_iter_simulation_speeds,
+    supply_params=None,
     evaluation_run=True,
-    rerouting_prob=0.9,
-    tls_tt_pen=6,
-    meso_minor_pen=10,
-    rerouting_period=30,
-    rerouting_adaptation=5,
-    rerouting_adaptation_steps=157,
-    meso_tls_flow_penalty=0.9,
-    priority_factor=0.01,
 ):
-    OD_dataframe_to_txt(path_iter_demand, od_vector, path_base_file=PATH_DEMAND)
-    #### this step is within the iteration of objective function to reduce the
-    #### stochasticity due to the generation of the trips
+    """
+    Generate and evaluate counts and speeds based on the provided demand.
+
+    Parameters:
+    - path_iter_demand (str): Path to the demand file to be generated.
+    - od_vector (list): OD vector representing the demand.
+    - path_iter_trips (str): Path to the trips file.
+    - path_iter_routes (str): Path to the routes file.
+    - path_temp_additional (str): Path to the additional detector file.
+    - path_iter_simulation_counts (str): Path to store simulation counts.
+    - path_iter_simulation_speeds (str): Path to store simulation speeds.
+    - evaluation_run (bool, optional): Whether it's an evaluation run. Default is True.
+
+    Returns:
+    - iter_true (list): True counts.
+    - iter_simulated (list): Simulated counts.
+    - iter_true_speeds (list): True speeds.
+    - iter_simulated_speeds (list): Simulated speeds.
+    """
+
+    od_dataframe_to_txt(path_iter_demand, od_vector, path_base_file=PATH_DEMAND)
     create_scenario(path_iter_trips, path_iter_routes, path_iter_demand)
     trip_validator(path_iter_trips, path_iter_routes)
     run_simulation(
@@ -94,19 +125,11 @@ def od_to_counts(
         path_temp_additional,
         evaluation_run,
         routing_how="reroute",
-        rerouting_prob=rerouting_prob,
-        tls_tt_penalty=tls_tt_pen,
-        meso_minor_penalty=meso_minor_pen,
-        rerouting_period=rerouting_period,
-        rerouting_adaptation=rerouting_adaptation,
-        rerouting_adaptation_steps=rerouting_adaptation_steps,
-        meso_tls_flow_penalty=meso_tls_flow_penalty,
-        priority_factor=priority_factor,
+        supply_params=supply_params,
     )
     iter_true, iter_simulated = get_true_simulated(
         path_output_counts=path_iter_simulation_counts,
         path_real_counts=PATH_REAL_COUNT,
-        # path_additional=path_temp_additional,
         flow_col="count",
         detector_col="det_id",
         time_col="hour",
@@ -115,8 +138,8 @@ def od_to_counts(
     iter_true_speeds, iter_simulated_speeds = get_true_simulated_speeds(
         path_output_speeds=path_iter_simulation_speeds,
         path_real_speeds=PATH_REAL_SPEED,
-        speed_col="speed",  #'q',
-        detector_col="det_id",  #'iu_ac',
+        speed_col="speed",
+        detector_col="det_id",
         time_col="hour",
     )
     return iter_true, iter_simulated, iter_true_speeds, iter_simulated_speeds
@@ -125,18 +148,40 @@ def od_to_counts(
 def wspsa_update_wrapper(
     true_count_file,
     det_counts,
-    od_file_template="../../" + SCENARIO + "/demand/od_list.txt",
+    od_file_template=f"../../{SCENARIO}/demand/od_list.txt",
     routes_file=path_routes,
     trips_output=path_trip_summary,
     detector_file=path_temp_additional,
-    save_weight_output="../../" + SCENARIO + "/wspsa/weight_iter.pickle",
-    save_assignment_output="../../" + SCENARIO + "/wspsa/weight_iter.pickle",
+    save_weight_output=f"../../{SCENARIO}/wspsa/weight_iter.pickle",
+    save_assignment_output=f"../../{SCENARIO}/wspsa/weight_iter.pickle",
     wscenario=SCENARIO,
     set_threshold=True,
     threshold_val=0,
     is_synthetic=True,
     binary_rounding=True,
 ):
+    """
+    Update detector incidence and assignments using WSPSA.
+
+    Parameters:
+    - true_count_file (str): Path to the true count file.
+    - det_counts (list): Detector counts.
+    - od_file_template (str, optional): Path to the OD file template. Default is derived from SCENARIO.
+    - routes_file (str): Path to the routes file.
+    - trips_output (str): Path to the trip summary output.
+    - detector_file (str): Path to the detector file.
+    - save_weight_output (str): Path to save weight data.
+    - save_assignment_output (str): Path to save assignment data.
+    - wscenario (str): Scenario name.
+    - set_threshold (bool, optional): Set a threshold value. Default is True.
+    - threshold_val (int, optional): Threshold value. Default is 0.
+    - is_synthetic (bool, optional): Whether the data is synthetic. Default is True.
+    - binary_rounding (bool, optional): Perform binary rounding. Default is True.
+
+    Returns:
+    - W (list): Updated weight data.
+    - A (list): Updated assignment data.
+    """
     W, A = generate_detector_incidence(
         od_file_template,
         routes_file,
@@ -157,6 +202,10 @@ def wspsa_update_wrapper(
     return W, A
 
 
+def sanitize_negative_values(X):
+    return np.where(X < 0, 0, X)
+
+
 def objective_function(
     X,
     path_demand,
@@ -165,14 +214,7 @@ def objective_function(
     X_prior,
     true_counts,
     true_speeds,
-    rerouting_prob,
-    tls_tt_pen,
-    meso_minor_pen,
-    rerouting_period,
-    rerouting_adaptation,
-    rerouting_adaptation_steps,
-    meso_tls_flow_penalty,
-    priority_factor,
+    supply_params,
     weighted=False,
     eval_rmsn=False,
     which_perturb="positive",
@@ -181,13 +223,8 @@ def objective_function(
     True and Simulaed detector counts
     TODO add a high cost when the demand value is negative"""
 
-    # check = bool(np.all(X_OD >= 0))
-    # print(X_OD)
-
-    X = np.where(X < 0, 0, X)
-
+    X = sanitize_negative_values(X)
     X = X.astype(int)
-
     num_od = len(X)
 
     if eval_rmsn == True:
@@ -200,20 +237,17 @@ def objective_function(
             path_temp_additional,
             path_simulation_counts,
             path_simulation_speeds,
-            rerouting_prob=rerouting_prob,
-            tls_tt_pen=tls_tt_pen,
-            meso_minor_pen=meso_minor_pen,
-            rerouting_period=rerouting_period,
-            rerouting_adaptation=rerouting_adaptation,
-            rerouting_adaptation_steps=rerouting_adaptation_steps,
-            meso_tls_flow_penalty=meso_tls_flow_penalty,
-            priority_factor=priority_factor,
+            supply_params,
         )
     else:
-        copy_additonal(
-            PATH_ADDITIONAL[:-4] + "_" + which_perturb + path_temp_additional[-4:],
-            path_temp_additional[:-4] + "_" + which_perturb + path_temp_additional[-4:],
+        source_additional = (
+            f"{PATH_ADDITIONAL[:-4]}_{which_perturb}{path_temp_additional[-4:]}"
         )
+        destination_additional = (
+            f"{path_temp_additional[:-4]}_{which_perturb}{path_temp_additional[-4:]}"
+        )
+        copy_additional(source_additional, destination_additional)
+
         count_init, simulated_counts, speed_init, simulated_speeds = od_to_counts(
             path_demand[:-4] + "_" + which_perturb + path_demand[-4:],
             X,
@@ -225,44 +259,39 @@ def objective_function(
             + which_perturb
             + path_simulation_counts[-4:],
             path_simulation_speeds + "_" + which_perturb,
+            supply_params,
             evaluation_run=eval_rmsn,
-            rerouting_prob=rerouting_prob,
-            tls_tt_pen=tls_tt_pen,
-            meso_minor_pen=meso_minor_pen,
-            rerouting_period=rerouting_period,
-            rerouting_adaptation=rerouting_adaptation,
-            rerouting_adaptation_steps=rerouting_adaptation_steps,
-            meso_tls_flow_penalty=meso_tls_flow_penalty,
-            priority_factor=priority_factor,
         )
 
     # equal weights for counts and demand
     global weight_counts, weight_od, weight_speed
 
-    if weighted == False:
-        ### when objective function evaluation is to check the value
-        count_gof = np.round(
+    if not weighted:
+        # When the objective function evaluation is to check the value
+        count_gof = round(
             gof_eval(
                 count_init.flatten(), simulated_counts.flatten(), estimator=estimator
             ),
             4,
         )
-        speed_gof = np.round(
+        speed_gof = round(
             gof_eval(
                 speed_init.flatten(), simulated_speeds.flatten(), estimator=estimator
             ),
             4,
         )
-        ### here its fine to use true ODs as we are trying to determine the distance
-        ### of the estimates from the given OD
-        rmsn = (
-            weight_counts * count_gof
-            + weight_speed * speed_gof
-            + weight_od * gof_eval(X_true, X, estimator=estimator)
+
+        od_gof = gof_eval(X_true, X, estimator=estimator)
+
+        # Here, it's fine to use true ODs as we are trying to determine the distance
+        # of the estimates from the given OD
+        overall_gof = (
+            weight_counts * count_gof + weight_speed * speed_gof + weight_od * od_gof
         )
         rmsn_c = count_gof
         rmsn_s = speed_gof
-        rmsn_od = gof_eval(X_true, X, estimator=estimator)
+        rmsn_od = od_gof
+
     else:
         ### when objective function evaluation is to get the gradient
         if weight_counts != 0:
@@ -285,100 +314,95 @@ def objective_function(
         if sd_counts.size:
             if sd_od.size:
                 if sd_speed.size:
-                    rmsn = np.hstack((sd_counts, sd_od, sd_speed))
+                    overall_gof = np.hstack((sd_counts, sd_od, sd_speed))
                 else:
-                    rmsn = np.hstack((sd_counts, sd_od))
+                    overall_gof = np.hstack((sd_counts, sd_od))
             else:
                 if sd_speed.size:
-                    rmsn = np.hstack((sd_counts, sd_speed))
+                    overall_gof = np.hstack((sd_counts, sd_speed))
                 else:
-                    rmsn = sd_counts
+                    overall_gof = sd_counts
         else:
             if sd_od.size:
                 if sd_speed.size:
-                    rmsn = np.hstack((sd_od, sd_speed))
+                    overall_gof = np.hstack((sd_od, sd_speed))
                 else:
-                    rmsn = sd_od
+                    overall_gof = sd_od
             else:
                 if sd_speed.size:
-                    rmsn = sd_speed
+                    overall_gof = sd_speed
                 else:
                     raise ("All weights cannot be zero")
 
-    if eval_rmsn == True:
+    if eval_rmsn:
         global res_dict
-        # stochastic averaging
-        if len(res_dict["od_val"]) > 1:
-            if np.std(res_dict["od_val"]) < 0.10:
-                global stochastic_solution_counter
-                stochastic_solutions = pd.DataFrame(
-                    {"real": X_true.flatten(), "simulated": X.flatten()}
-                )
-                stochastic_solutions.to_csv(
-                    pre_string
-                    + "/interim_"
-                    + str(stochastic_solution_counter)
-                    + "_"
-                    + "od.csv",
-                    index=None,
-                )
-                save_counts = pd.DataFrame(
-                    {
-                        "real": count_init.flatten(),
-                        "simulated": simulated_counts.flatten(),
-                    }
-                )
-                save_counts.to_csv(
-                    pre_string
-                    + "/interim_"
-                    + str(stochastic_solution_counter)
-                    + "_counts.csv",
-                    index=None,
-                )
-                stochastic_solution_counter += 1
-        res_dict["f_val"].append(rmsn)
+        # Stochastic averaging
+        if len(res_dict["od_val"]) > 1 and np.std(res_dict["od_val"]) < 0.10:
+            global stochastic_solution_counter
+            stochastic_solutions = pd.DataFrame(
+                {"real": X_true.flatten(), "simulated": X.flatten()}
+            )
+            stochastic_solutions.to_csv(
+                f"{pre_string}/interim_{stochastic_solution_counter}_od.csv",
+                index=None,
+            )
+            save_counts = pd.DataFrame(
+                {
+                    "real": count_init.flatten(),
+                    "simulated": simulated_counts.flatten(),
+                }
+            )
+            save_counts.to_csv(
+                f"{pre_string}/interim_{stochastic_solution_counter}_counts.csv",
+                index=None,
+            )
+            stochastic_solution_counter += 1
+        res_dict["f_val"].append(overall_gof)
         res_dict["count_val"].append(rmsn_c)
         res_dict["speed_val"].append(rmsn_s)
         res_dict["od_val"].append(rmsn_od)
+
         global estimated
         estimated = X
-        print(f"Weighted {estimator} = {rmsn}")
+        print(f"Weighted {estimator} = {overall_gof}")
         print(f"Count {estimator} = {rmsn_c}")
         print(f"Speed {estimator} = {rmsn_s}")
         print(f"OD {estimator} = {rmsn_od}")
 
-        global best_rmsn, best_simulated_counts, best_simulated_speeds
-        if rmsn < best_rmsn:
-            OD_dataframe_to_txt(
-                pre_string + "/" + OD_FILE_IDENTIFIER + "_best.txt", X, PATH_DEMAND
-            )
+        global best_gof, best_simulated_counts, best_simulated_speeds
+        if overall_gof < best_gof:
+            output_file = f"{pre_string}/{config['OD_FILE_IDENTIFIER']}_best.txt"
+            od_dataframe_to_txt(output_file, X, PATH_DEMAND)
+
             best_simulated_speeds = simulated_speeds
             best_simulated_counts = simulated_counts
-            best_rmsn = rmsn
+            best_gof = overall_gof
+
             global best_od
             best_od = copy.deepcopy(X)
-            res_dict["rerouting_prob"] = rerouting_prob
-            res_dict["tls_tt_pen"] = tls_tt_pen
-            res_dict["meso_minor_pen"] = meso_minor_pen
-            res_dict["rerouting_period"] = rerouting_period
-            res_dict["rerouting_adaptation"] = rerouting_adaptation
-            res_dict["rerouting_adaptation_steps"] = rerouting_adaptation_steps
-            res_dict["meso_tls_flow_penalty"] = meso_tls_flow_penalty
-            res_dict["priority_factor"] = priority_factor
+            res_dict["rerouting_prob"] = supply_params["rerouting_prob"]
+            res_dict["tls_tt_penalty"] = supply_params["tls_tt_penalty"]
+            res_dict["meso_minor_penalty"] = supply_params["meso_minor_penalty"]
+            res_dict["rerouting_period"] = supply_params["rerouting_period"]
+            res_dict["rerouting_adaptation"] = supply_params["rerouting_adaptation"]
+            res_dict["rerouting_adaptation_steps"] = supply_params[
+                "rerouting_adaptation_steps"
+            ]
+            res_dict["meso_tls_flow_penalty"] = supply_params["meso_tls_flow_penalty"]
+            res_dict["priority_factor"] = supply_params["priority_factor"]
 
-            ### save copies of the edge data
-            copy_additonal(
-                pre_string + "/edge_data_300", pre_string + "/best_edge_data_300"
-            )
-            copy_additonal(
-                pre_string + "/edge_data_900", pre_string + "/best_edge_data_900"
-            )
-            copy_additonal(
-                pre_string + "/edge_data_3600", pre_string + "/best_edge_data_3600"
-            )
-            copy_additonal(pre_string + "/out.csv", pre_string + "/best_out.csv")
+            # Save copies of the edge data
+            for interval in [300, 900, 3600]:
+                source_path = f"{pre_string}/edge_data_{interval}"
+                destination_path = f"{pre_string}/best_edge_data_{interval}"
+                copy_additional(source_path, destination_path)
 
-    return rmsn
+            # Copy the 'out.csv' file
+            source_path = f"{pre_string}/out.csv"
+            destination_path = f"{pre_string}/best_out.csv"
+            copy_additional(source_path, destination_path)
+
+    return overall_gof
 
 
 def objective_function_without_simulator(
@@ -414,16 +438,17 @@ def objective_function_without_simulator(
     # equal weights for counts and demand
     global weight_counts, weight_od, weight_speed
 
-    if weighted == False:
-        count_rmsn = np.round(
+    if not weighted:
+        count_gof = np.round(
             gof_eval(
                 count_init.flatten(), simulated_counts.flatten(), estimator=estimator
             ),
             4,
         )
-        rmsn = weight_counts * gof_eval(
-            count_init.flatten(), simulated_counts.flatten(), estimator=estimator
-        ) + weight_od * gof_eval(X_true, X, estimator=estimator)
+
+        overall_gof = weight_counts * count_gof + weight_od * gof_eval(
+            X_true, X, estimator=estimator
+        )
     else:
         if weight_counts != 0:
             sd_counts = weight_counts * squared_deviation(
@@ -438,25 +463,25 @@ def objective_function_without_simulator(
 
         if sd_counts.size:
             if sd_od.size:
-                rmsn = np.hstack((sd_counts, sd_od))
+                overall_gof = np.hstack((sd_counts, sd_od))
             else:
-                rmsn = sd_counts
+                overall_gof = sd_counts
         else:
             if sd_od.size:
-                rmsn = sd_od
+                overall_gof = sd_od
             else:
                 raise ("All weights cannot be zero")
 
     if eval_rmsn == True:
-        global estimated, best_rmsn, best_od, best_simulated_counts
+        global estimated, best_gof, best_od, best_simulated_counts
         estimated = X
-        if rmsn < best_rmsn:
+        if overall_gof < best_gof:
             global best_od
             best_od = copy.deepcopy(X)
             best_simulated_counts = simulated_counts.flatten()
-            best_rmsn = rmsn
+            best_gof = overall_gof
 
-    return rmsn
+    return overall_gof
 
 
 def calibration_handler(
@@ -469,14 +494,7 @@ def calibration_handler(
     true_speeds,
     path_demand,
     path_trips,
-    rerouting_prob,
-    tls_tt_pen,
-    meso_minor_pen,
-    rerouting_period,
-    rerouting_adaptation,
-    rerouting_adaptation_steps,
-    meso_tls_flow_penalty,
-    priority_factor,
+    supply_params,
     n_iterations,
     ak,
     ck,
@@ -517,14 +535,7 @@ def calibration_handler(
                 x_prior,
                 true_counts,
                 true_speeds,
-                rerouting_prob,
-                tls_tt_pen,
-                meso_minor_pen,
-                rerouting_period,
-                rerouting_adaptation,
-                rerouting_adaptation_steps,
-                meso_tls_flow_penalty,
-                priority_factor,
+                supply_params,
             ),
             paired=False,
             a=ak,
@@ -591,9 +602,9 @@ def calibration_handler_out_of_loop(
     return result
 
 
-def black_box_function(
-    tls_tt_pen,
-    meso_minor_pen,
+def calibrate_supply_function(
+    tls_tt_penalty,
+    meso_minor_penalty,
     rerouting_probability,
     rerouting_period,
     rerouting_adaptation,
@@ -601,41 +612,39 @@ def black_box_function(
     meso_tls_flow_penalty,
     priority_factor,
 ):
-    rerouting_probability = float(rerouting_probability)
-    rerouting_period = 1 + int(rerouting_period)
-    rerouting_adaptation = 1 + int(rerouting_adaptation)
-    rerouting_adaptation_steps = int(rerouting_adaptation_steps)
-    meso_minor_pen = int(meso_minor_pen)
-    tls_tt_pen = float(tls_tt_pen)
-    meso_tls_flow_penalty = float(meso_tls_flow_penalty)
-    priority_factor = float(priority_factor)
+    temp_supply_params = {}
+    temp_supply_params["rerouting_probability"] = float(rerouting_probability)
+    temp_supply_params["rerouting_period"] = 1 + int(rerouting_period)
+    temp_supply_params["rerouting_adaptation"] = 1 + int(rerouting_adaptation)
+    temp_supply_params["rerouting_adaptation_steps"] = int(rerouting_adaptation_steps)
+    temp_supply_params["meso_minor_penalty"] = int(meso_minor_penalty)
+    temp_supply_params["tls_tt_penalty"] = float(tls_tt_penalty)
+    temp_supply_params["meso_tls_flow_penalty"] = float(meso_tls_flow_penalty)
+    temp_supply_params["priority_factor"] = float(priority_factor)
 
+    od_file = f'{pre_string}/{config["OD_FILE_IDENTIFIER"]}_best.txt'
     true_counts, simulated_counts, true_speeds, simulated_speeds = od_to_counts(
-        pre_string + "/" + OD_FILE_IDENTIFIER + "_best.txt",
+        od_file,
         best_od,
         path_trips,
         path_routes,
         path_temp_additional,
         path_simulation_counts,
         path_simulation_speeds,
-        rerouting_prob=rerouting_probability,
-        tls_tt_pen=tls_tt_pen,
-        meso_minor_pen=meso_minor_pen,
-        rerouting_period=rerouting_period,
-        rerouting_adaptation=rerouting_adaptation,
-        rerouting_adaptation_steps=rerouting_adaptation_steps,
-        meso_tls_flow_penalty=meso_tls_flow_penalty,
-        priority_factor=priority_factor,
+        temp_supply_params,
     )
 
     rmsn = gof_eval(true_counts, simulated_counts, estimator=estimator)
-    # add speeds here?
+
+    # Add speeds here if needed
+
     return -rmsn
 
 
 def spsa_tune_function(log_spsa_a, log_spsa_c):
-    spsa_a = np.power(10, log_spsa_a)
-    spsa_c = np.power(10, log_spsa_c)
+    spsa_a = 10**log_spsa_a
+    spsa_c = 10**log_spsa_c
+
     res = calibration_handler_out_of_loop(
         objective_function_without_simulator,
         init_iter,
@@ -651,20 +660,20 @@ def spsa_tune_function(log_spsa_a, log_spsa_c):
         bounds=BOUNDS,
     )
 
-    X = res["x"]
-    X = np.array([int(i) for i in np.where(X < 0, 0, X)])
-
+    X = np.array([int(i) for i in np.where(res["x"] < 0, 0, res["x"])])
     simulated_counts = np.zeros((A.shape[1], 1))
     for i in range(A.shape[1]):
         simulated_counts[i] = np.sum(np.multiply(X, A[:, i]).astype(int))
     simulated_counts = simulated_counts.reshape(-1, 1)
 
     global weight_counts, weight_od, weight_speed
-    rmsn = weight_counts * gof_eval(
+    count_gof = gof_eval(
         count_init.flatten(), simulated_counts.flatten(), estimator=estimator
-    ) + weight_od * gof_eval(X_OD, X, estimator=estimator)
+    )
+    od_gof = gof_eval(X_OD, X, estimator=estimator)
+    overall_gof = weight_counts * count_gof + weight_od * od_gof
 
-    return -rmsn
+    return -overall_gof
 
 
 if __name__ == "__main__":
@@ -673,34 +682,29 @@ if __name__ == "__main__":
     sim_in_loop = eval(os.environ.get("sim_in_loop"))
     sim_out_loop = eval(os.environ.get("sim_out_loop"))
 
-    init_rerouting_prob = 0.9
-    init_tls_tt_pen = 6.0
-    init_meso_minor_pen = 10
-    init_rerouting_period = 30
-    init_rerouting_adaptation = 5
-    init_rerouting_adaptation_steps = 157
-    init_meso_tls_flow_penalty = 0.9
-    init_priority_factor = 0.01
+    initial_supply_params = {
+        "rerouting_prob": 0.9,
+        "tls_tt_penalty": 6.0,
+        "meso_minor_penalty": 10,
+        "rerouting_period": 30,
+        "rerouting_adaptation": 5,
+        "rerouting_adaptation_steps": 157,
+        "meso_tls_flow_penalty": 0.9,
+        "priority_factor": 0.01,
+    }
 
     if execute_scenario:
         create_scenario(path_trips, path_routes, PATH_DEMAND)
         trip_validator(path_trips, path_routes)
 
         # Enabling online routing
-        copy_additonal(PATH_ADDITIONAL, path_temp_additional)
+        copy_additional(PATH_ADDITIONAL, path_temp_additional)
         run_simulation(
             path_trips,
             path_routes,
             path_temp_additional,
             routing_how="reroute",
-            rerouting_prob=init_rerouting_prob,
-            tls_tt_pen=init_tls_tt_pen,
-            meso_minor_pen=init_meso_minor_pen,
-            rerouting_period=init_rerouting_period,
-            rerouting_adaptation=init_rerouting_adaptation,
-            rerouting_adaptation_steps=init_rerouting_adaptation_steps,
-            meso_tls_flow_penalty=init_meso_tls_flow_penalty,
-            priority_factor=init_priority_factor,
+            supply_params=initial_supply_params,
         )
 
     if synthetic_counts:
@@ -721,9 +725,9 @@ if __name__ == "__main__":
         det_counts_for_weights = ""
     else:
         # path to real - observed data
-        det_counts_for_weights = ""
-        counts_file = ""
-        speed_file = ""
+        det_counts_for_weights = FILE_MATCH_DETECTORS
+        counts_file = FILE_REAL_COUNTS
+        speed_file = FILE_REAL_SPEEDS
 
     if not synthetic_counts:
         df_real = pd.read_csv(counts_file)
@@ -763,18 +767,12 @@ if __name__ == "__main__":
     print("Initial Speeds " + estimator + ": " + str(rmsn_speeds))
     for seq in range(0, n_sequential):
         if seq == 0:
-            rerouting_probability = init_rerouting_prob
-            rerouting_period = init_tls_tt_pen
-            rerouting_adaptation = init_meso_minor_pen
-            rerouting_adaptation_steps = init_rerouting_adaptation
-            meso_minor_pen = init_meso_minor_pen
-            tls_tt_pen = init_tls_tt_pen
-            meso_tls_flow_penalty = init_meso_tls_flow_penalty
-            priority_factor = init_priority_factor
+            if initial_supply_params:
+                supply_params = initial_supply_params
 
         if eval(calibrate_demand):
             if seq == 0:
-                X_OD = np.array(OD_txt_to_dataframe(path=PATH_DEMAND))
+                X_OD = np.array(od_txt_to_dataframe(path=PATH_DEMAND))
                 X_base_true = copy.deepcopy(X_OD)
                 # add artifical noise and bias to the  demand matrix
                 initial_solution = np.array(
@@ -789,21 +787,14 @@ if __name__ == "__main__":
                 init = np.where(initial_solution < 0, 0, initial_solution)
 
             count_init, sim_init_counts, speeds_init, sim_init_speeds = od_to_counts(
-                pre_string + "/" + OD_FILE_IDENTIFIER + "_init.txt",
+                pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_init.txt",
                 init,
                 path_trips,
                 path_routes,
                 path_temp_additional,
                 path_simulation_counts,
                 path_simulation_speeds,
-                rerouting_prob=rerouting_probability,
-                tls_tt_pen=tls_tt_pen,
-                meso_minor_pen=meso_minor_pen,
-                rerouting_period=rerouting_period,
-                rerouting_adaptation=rerouting_adaptation,
-                rerouting_adaptation_steps=rerouting_adaptation_steps,
-                meso_tls_flow_penalty=meso_tls_flow_penalty,
-                priority_factor=priority_factor,
+                supply_params,
             )
 
             W, A = wspsa_update_wrapper(
@@ -816,27 +807,15 @@ if __name__ == "__main__":
             )
 
             if which_algo == "wspsa":
-                assert W.shape[0] == len(X_OD), (
-                    "Shapes of Weight matrix: "
-                    + str(W.shape[0])
-                    + " and OD matrix: "
-                    + str(len(X_OD))
-                    + " are not equal"
-                )
-                assert W.shape[1] == len(true_counts), (
-                    "Shapes of Weight matrix: "
-                    + str(W.shape[1])
-                    + " and Count matrix: "
-                    + str(len(true_counts))
-                    + " are not equal"
-                )
-                assert W.shape[1] == len(true_speeds), (
-                    "Shapes of Weight matrix: "
-                    + str(W.shape[1])
-                    + " and Speed matrix: "
-                    + str(len(true_speeds))
-                    + " are not equal"
-                )
+                assert W.shape[0] == len(
+                    X_OD
+                ), f"Shapes of Weight matrix: {W.shape[0]} and OD matrix: {len(X_OD)} are not equal"
+                assert W.shape[1] == len(
+                    true_counts
+                ), f"Shapes of Weight matrix: {W.shape[1]} and Count matrix: {len(true_counts)} are not equal"
+                assert W.shape[1] == len(
+                    true_speeds
+                ), f"Shapes of Weight matrix: {W.shape[1]} and Speed matrix: {len(true_speeds)} are not equal"
 
             if weight_counts != 0:
                 if bias_correction_method == "naive":
@@ -886,21 +865,14 @@ if __name__ == "__main__":
                     speeds_init,
                     sim_corrected_speeds,
                 ) = od_to_counts(
-                    pre_string + "/" + OD_FILE_IDENTIFIER + "_init.txt",
+                    pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_init.txt",
                     corrected_od,
                     path_trips,
                     path_routes,
                     path_temp_additional,
                     path_simulation_counts,
                     path_simulation_speeds,
-                    rerouting_prob=rerouting_probability,
-                    tls_tt_pen=tls_tt_pen,
-                    meso_minor_pen=meso_minor_pen,
-                    rerouting_period=rerouting_period,
-                    rerouting_adaptation=rerouting_adaptation,
-                    rerouting_adaptation_steps=rerouting_adaptation_steps,
-                    meso_tls_flow_penalty=meso_tls_flow_penalty,
-                    priority_factor=priority_factor,
+                    supply_params,
                 )
 
                 rmsn_c = gof_eval(count_init, sim_corrected_counts, estimator=estimator)
@@ -1062,7 +1034,7 @@ if __name__ == "__main__":
                     for counter_out in range(n_iterations):
                         ####### Demand Calibration ######
                         if sim_out_loop:
-                            best_rmsn = 10000000
+                            best_gof = 10000000
                             best_od = []
                             best_simulated_speeds = 0
                             best_simulated_counts = 0
@@ -1090,28 +1062,27 @@ if __name__ == "__main__":
 
                             init_iter = res["x"]
 
-                            OD_dataframe_to_txt(
-                                pre_string + "/" + OD_FILE_IDENTIFIER + "_n.txt",
+                            od_dataframe_to_txt(
+                                pre_string
+                                + "/"
+                                + config["OD_FILE_IDENTIFIER"]
+                                + "_n.txt",
                                 init_iter,
                                 path_base_file=PATH_DEMAND,
                             )
 
                             _, _, _, _ = od_to_counts(
-                                pre_string + "/" + OD_FILE_IDENTIFIER + "_n.txt",
+                                pre_string
+                                + "/"
+                                + config["OD_FILE_IDENTIFIER"]
+                                + "_n.txt",
                                 init_iter,
                                 path_trips,
                                 path_routes,
                                 path_temp_additional,
                                 path_simulation_counts,
                                 path_simulation_speeds,
-                                rerouting_prob=rerouting_probability,
-                                tls_tt_pen=tls_tt_pen,
-                                meso_minor_pen=meso_minor_pen,
-                                rerouting_period=rerouting_period,
-                                rerouting_adaptation=rerouting_adaptation,
-                                rerouting_adaptation_steps=rerouting_adaptation_steps,
-                                meso_tls_flow_penalty=meso_tls_flow_penalty,
-                                priority_factor=priority_factor,
+                                supply_params,
                             )
                             W_prev = copy.deepcopy(W_out)
                             W_out, A = wspsa_update_wrapper(
@@ -1149,7 +1120,7 @@ if __name__ == "__main__":
                                 )
 
                         if sim_in_loop:
-                            best_rmsn = 10000000
+                            best_gof = 10000000
                             best_od = []
                             best_simulated_speeds = 0
                             best_simulated_counts = 0
@@ -1164,14 +1135,7 @@ if __name__ == "__main__":
                                 true_speeds,
                                 path_temp_demand,
                                 path_trips,
-                                rerouting_probability,
-                                rerouting_period,
-                                rerouting_adaptation,
-                                rerouting_adaptation_steps,
-                                meso_minor_pen,
-                                tls_tt_pen,
-                                meso_tls_flow_penalty,
-                                priority_factor,
+                                supply_params,
                                 sim_in_iterations,
                                 spsa_a,
                                 spsa_c,
@@ -1224,6 +1188,7 @@ if __name__ == "__main__":
                                     + " are not equal"
                                 )
                     od_bag_list.append(best_od)
+                    print(best_od)
                     save_od = pd.DataFrame(
                         {"real": X_base_true, "simulated": best_od.flatten()}
                     )
@@ -1243,21 +1208,14 @@ if __name__ == "__main__":
                 )
 
                 _, sim_final_counts, _, sim_final_speeds = od_to_counts(
-                    pre_string + "/" + OD_FILE_IDENTIFIER + "_mean.txt",
+                    pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_mean.txt",
                     od_mean,
                     path_trips,
                     path_routes,
                     path_temp_additional,
                     path_simulation_counts,
                     path_simulation_speeds,
-                    rerouting_prob=rerouting_probability,
-                    tls_tt_pen=tls_tt_pen,
-                    meso_minor_pen=meso_minor_pen,
-                    rerouting_period=rerouting_period,
-                    rerouting_adaptation=rerouting_adaptation,
-                    rerouting_adaptation_steps=rerouting_adaptation_steps,
-                    meso_tls_flow_penalty=meso_tls_flow_penalty,
-                    priority_factor=priority_factor,
+                    supply_params,
                 )
 
                 save_counts = pd.DataFrame(
@@ -1284,37 +1242,14 @@ if __name__ == "__main__":
                     }
                 )
 
-                save_counts.to_csv(
-                    pre_string
-                    + "/mean_"
-                    + str(seq)
-                    + "_"
-                    + str(bagging_run)
-                    + "_"
-                    + "counts.csv",
-                    index=None,
-                )
-                save_speeds.to_csv(
-                    pre_string
-                    + "/mean_"
-                    + str(seq)
-                    + "_"
-                    + str(bagging_run)
-                    + "_"
-                    + "speeds.csv",
-                    index=None,
-                )
-                save_od.to_csv(
-                    pre_string
-                    + "/mean_"
-                    + str(seq)
-                    + "_"
-                    + str(bagging_run)
-                    + "_"
-                    + "od.csv",
-                    index=None,
-                )
-                # PATH_DEMAND = pre_string +"/"+OD_FILE_IDENTIFIER+"_mean.txt"
+                for data, data_type in [
+                    (save_counts, "counts"),
+                    (save_speeds, "speeds"),
+                    (save_od, "od"),
+                ]:
+                    file_path = f"{pre_string}/mean_{seq}_{bagging_run}_{data_type}.csv"
+                    data.to_csv(file_path, index=None)
+                # PATH_DEMAND = pre_string +"/"+config["OD_FILE_IDENTIFIER"]+"_mean.txt"
 
         od_mean = pd.read_csv(
             pre_string + "/mean_" + str(seq) + "_" + str(bagging_run) + "_" + "od.csv"
@@ -1329,14 +1264,14 @@ if __name__ == "__main__":
                 "rerouting_period": (30, 90),
                 "rerouting_adaptation": (5, 120),
                 "rerouting_adaptation_steps": (120, 240),
-                "meso_minor_pen": (0, 60),
-                "tls_tt_pen": (0, 1),
+                "meso_minor_penalty": (0, 60),
+                "tls_tt_penalty": (0, 1),
                 "meso_tls_flow_penalty": (0, 1),
                 "priority_factor": (0.1, 1),
             }
 
             optimizer = BayesianOptimization(
-                f=black_box_function,
+                f=calibrate_supply_function,
                 pbounds=pbounds,
                 random_state=1,
                 allow_duplicate_points=True,
@@ -1357,15 +1292,22 @@ if __name__ == "__main__":
 
             supply_res = optimizer.max["params"]
 
-            rerouting_probability = float(supply_res["rerouting_probability"])
-            rerouting_period = int(supply_res["rerouting_period"])
-            rerouting_adaptation = int((supply_res["rerouting_adaptation"]))
-            rerouting_adaptation_steps = int(supply_res["rerouting_adaptation_steps"])
-            meso_minor_pen = int(supply_res["meso_minor_pen"])
-            tls_tt_pen = float(supply_res["tls_tt_pen"])
-            meso_tls_flow_penalty = float(supply_res["meso_tls_flow_penalty"])
-
-            priority_factor = float(supply_res["priority_factor"])
+            supply_params["rerouting_probability"] = float(
+                supply_res["rerouting_probability"]
+            )
+            supply_params["rerouting_period"] = int(supply_res["rerouting_period"])
+            supply_params["rerouting_adaptation"] = int(
+                (supply_res["rerouting_adaptation"])
+            )
+            supply_params["rerouting_adaptation_steps"] = int(
+                supply_res["rerouting_adaptation_steps"]
+            )
+            supply_params["meso_minor_penalty"] = int(supply_res["meso_minor_penalty"])
+            supply_params["tls_tt_penalty"] = float(supply_res["tls_tt_penalty"])
+            supply_params["meso_tls_flow_penalty"] = float(
+                supply_res["meso_tls_flow_penalty"]
+            )
+            supply_params["priority_factor"] = float(supply_res["priority_factor"])
 
             bayes_optim_target_val = abs(optimizer.max["target"])
 
@@ -1375,52 +1317,37 @@ if __name__ == "__main__":
             res_dict["f_val_supply"].append(bayes_optim_target_val)
 
         _, sim_final_counts, _, sim_final_speeds = od_to_counts(
-            pre_string + "/" + OD_FILE_IDENTIFIER + "_mean.txt",
+            pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_mean.txt",
             od_mean,
             path_trips,
             path_routes,
             path_temp_additional,
             path_simulation_counts,
             path_simulation_speeds,
-            rerouting_prob=rerouting_probability,
-            tls_tt_pen=tls_tt_pen,
-            meso_minor_pen=meso_minor_pen,
-            rerouting_period=rerouting_period,
-            rerouting_adaptation=rerouting_adaptation,
-            rerouting_adaptation_steps=rerouting_adaptation_steps,
-            meso_tls_flow_penalty=meso_tls_flow_penalty,
-            priority_factor=priority_factor,
+            supply_params,
         )
 
-    res_dict = save_params(
-        res_dict,
-        [
-            "spsa_a_init",
-            "spsa_c_init",
-            "n_iterations",
-            "sim_in_iterations",
-            "noise_param",
-            "bias_param",
-            "spsa_reps",
-            "weight_counts",
-            "weight_od",
-            "weight_speed",
-            "wspsa_thrshold",
-            "rerouting_probability",
-            "tls_tt_pen",
-            "meso_minor_pen",
-            "rerouting_period",
-            "rerouting_adaptation",
-            "rerouting_adaptation_steps",
-            "meso_tls_flow_penalty",
-            "priority_factor"
-            # ,'noise_prior'
-        ],
-    )
+    parameters_to_save = [
+        "spsa_a_init",
+        "spsa_c_init",
+        "n_iterations",
+        "sim_in_iterations",
+        "noise_param",
+        "bias_param",
+        "spsa_reps",
+        "weight_counts",
+        "weight_od",
+        "weight_speed",
+        "wspsa_thrshold",
+    ]
 
-    with open(pre_string + "/results_" + timestr + ".json", "w") as fp:
+    res_dict = save_params(res_dict, parameters_to_save)
+
+    result_file_path = f"{pre_string}/results_{timestr}.json"
+    with open(result_file_path, "w") as fp:
         print(res_dict)
         json.dump(res_dict, fp)
+        json.dump(supply_params, fp)
 
     plotting = True
     if plotting:
@@ -1447,35 +1374,13 @@ if __name__ == "__main__":
             bias_param,
         )
 
-        plt.tight_layout()
-        plt.savefig(
-            pre_string
-            + "/img_results_"
-            + str(bagging)
-            + "_n_"
-            + str(noise_param)
-            + "_"
-            + "b_"
-            + str(int(100 * bias_param))
-            + "_"
-            + "_"
-            + str(n_iterations)
-            + "_"
-            + str(weight_od)
-            + "_"
-            + estimator
-            + "_"
-            + "_"
-            + str(weight_counts)
-            + "_"
-            + str(weight_speed)
-            + "_"
-            + str(which_algo)
-            + "_"
-            + str(wspsa_thrshold)
-            + ".png",
-            dpi=300,
+        image_filename = (
+            f"{pre_string}/img_results_{bagging}_n_{noise_param}_b_{int(100 * bias_param)}_"
+            f"{n_iterations}_{weight_od}_{estimator}_{weight_counts}_{weight_speed}_{which_algo}_"
+            f"{wspsa_thrshold}.png"
         )
+        plt.tight_layout()
+        plt.savefig(image_filename, dpi=300)
         plt.close()
 
         fig, ax = plt.subplots(1, 2, figsize=(6, 3))
@@ -1483,36 +1388,14 @@ if __name__ == "__main__":
             ax, res_dict, spsa_a_init, spsa_c_init, estimator
         )
         plt.suptitle("Result of OD Estimation", fontsize=16)
-
         plt.legend()
         plt.tight_layout()
-        plt.savefig(
-            pre_string
-            + "/img_loss_"
-            + timestr
-            + "_n_"
-            + str(noise_param)
-            + "_"
-            + "b_"
-            + str(int(100 * bias_param))
-            + "_"
-            + "_"
-            + str(n_iterations)
-            + "_"
-            + estimator
-            + "_"
-            + str(weight_od)
-            + "_"
-            + str(weight_counts)
-            + "_"
-            + str(weight_speed)
-            + "_"
-            + str(which_algo)
-            + "_"
-            + str(wspsa_thrshold)
-            + ".png",
-            dpi=300,
+        image_filename = (
+            f"{pre_string}/img_loss_{timestr}_n_{noise_param}_b_{int(100 * bias_param)}_"
+            f"_{n_iterations}_{estimator}_{weight_od}_{weight_counts}_{weight_speed}_"
+            f"{which_algo}_{wspsa_thrshold}.png"
         )
+        plt.savefig(image_filename, dpi=300)
         plt.close()
 
         if sim_in_loop == False:
@@ -1547,30 +1430,8 @@ if __name__ == "__main__":
 
         plt.tight_layout()
         plt.savefig(
-            pre_string
-            + "/img_results_"
-            + timestr
-            + "_n_"
-            + str(noise_param)
-            + "_"
-            + "b_"
-            + str(int(100 * bias_param))
-            + "_"
-            + "_"
-            + str(n_iterations)
-            + "_"
-            + str(weight_od)
-            + "_"
-            + estimator
-            + "_"
-            + "_"
-            + str(weight_counts)
-            + "_"
-            + str(weight_speed)
-            + "_"
-            + str(which_algo)
-            + "_"
-            + str(wspsa_thrshold)
-            + ".png",
+            f"{pre_string}/img_results_{timestr}_n_{noise_param}_b_{int(100 * bias_param)}_"
+            f"{n_iterations}_{weight_od}_{estimator}_{weight_counts}_{weight_speed}_"
+            f"{which_algo}_{wspsa_thrshold}.png",
             dpi=300,
         )

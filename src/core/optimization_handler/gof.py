@@ -62,7 +62,7 @@ def median_gof_eval(data, data_simulated, estimator="rmsn"):
     return gof_val
 
 
-def squared_deviation(data, data_simulated, which_metric="scaled_weighted_geh"):
+def squared_deviation(data, data_simulated, which_metric="standardized_weighted_geh"):
     """Squared deviation for use in W-SPSA algorithm"""
 
     assert data.shape == data_simulated.shape

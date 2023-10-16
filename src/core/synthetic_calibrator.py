@@ -9,9 +9,12 @@ import pandas as pd
 
 import utilities
 
-from optimizationHandler.gof import gof_eval, squared_deviation
-from optimizationHandler.optimizer import SolutionFinder
-from syntheticExperiment import synthetic_scenario_orchestrator, synthetic_simulation
+from optimization_handler.gof import gof_eval, squared_deviation
+from optimization_handler.optimizer import SolutionFinder
+from core.synthetie_experiment import (
+    synthetic_scenario_orchestrator,
+    synthetic_simulation,
+)
 
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
