@@ -107,7 +107,7 @@ Following procedure for running <b>Analytical or static simulation </b> scenario
 
 - Set the current working director to [src/wrapper](src/wrapper/) in the Command line interface, as above.
 
-- The Python file is the overall wrapper [runAnalytical_sim.py](src/wrapper/run_analyticalSim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
+- The Python file is the overall wrapper [run_analytical_sim.py](src/wrapper/run_analytical_sim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
 
 - Run the following in terminal:
   ```sh
