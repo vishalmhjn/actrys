@@ -15,8 +15,8 @@ config = {
     "DEMAND_INTERVAL": int(os.environ.get("DEMAND_INTERVAL")) / 3600,
     "TOD_START": int(float(os.environ.get("TOD_START"))),
     "TOD_END": int(float(os.environ.get("TOD_END"))),
-    "WARM_UP_PERIOD": 2,
-    "COOL_DOWN_PERIOD": 0,
+    "WARM_UP_PERIOD": int(float(os.environ.get("WARM_UP_PERIOD"))),
+    "COOL_DOWN_PERIOD": int(float(os.environ.get("COOL_DOWN_PERIOD"))),
 }
 
 TOD = np.arange(

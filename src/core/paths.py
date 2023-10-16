@@ -20,9 +20,7 @@ FILE_REAL_SPEEDS = os.environ.get("FILE_REAL_SPEEDS")
 
 pre_string = "../../" + SCENARIO + "/" + temp_folder_name
 path_temp_demand = pre_string + "/" + config["OD_FILE_IDENTIFIER"] + "_n.txt"
-path_temp_additional = (
-    pre_string + "/" + PATH_ADDITIONAL.split("/")[-1]
-)  # additional.add.xml"
+path_temp_additional = pre_string + "/" + PATH_ADDITIONAL.split("/")[-1]
 path_simulation_counts = pre_string + "/out.xml"
 path_simulation_speeds = pre_string + "/edge_data_" + str(DEMAND_DURATION)
 path_trips, path_routes = file_manager(temp_folder_name)

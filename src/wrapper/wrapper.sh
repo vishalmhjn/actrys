@@ -50,11 +50,15 @@ set_environment_variables() {
     export PATH_REAL_COUNT=../../$SCENARIO/$temp_scenario_name/real_counts_complete.csv
     export PATH_OUTPUT_SPEED=../../$SCENARIO/$temp_scenario_name/edge_data_3600
     export PATH_REAL_SPEED=../../$SCENARIO/$temp_scenario_name/real_edge_data_3600.csv
-    export FILE_MATCH_DETECTORS=../../ua_aqt/matchable_detectors.csv
-    export FILE_REAL_COUNTS=../../ua_aqt/real_counts.csv
-    export FILE_REAL_SPEEDS=../../ua_aqt/dummy_edge_data_3600.csv
+    
+    export FILE_MATCH_DETECTORS=../../$SCENARIO/matchable_detectors.csv
+    export FILE_REAL_COUNTS=../../$SCENARIO/real_counts.csv
+    export FILE_REAL_SPEEDS=../../$SCENARIO/dummy_edge_data_3600.csv
+    
     export TOD_START=7
     export TOD_END=9
+    export WARM_UP_PERIOD=2
+    export COOL_DOWN_PERIOD=0
 }
 
 # Main execution

@@ -6,8 +6,9 @@ def run_calibration_scenario(
     scenario,
     bias=0.7,
     noise=0,
+    synthetic_counts=True,
     spsa_a=0.1,
-    spsa_c=1,
+    spsa_c=0.1,
     spsa_a_out=1,
     spsa_c_out=1,
     spsa_reps=1,
@@ -35,7 +36,7 @@ def run_calibration_scenario(
         subprocess.run(
             f"sh wrapper.sh \
             free_{demand_interval}_{bias}_{noise}_{weight_profile[0]}_{weight_profile[1]}_{weight_profile[2]}_{count_noise_val}_sequential_{bias_correction_method}_2a \
-            True False \
+            True {synthetic_counts} \
             {noise} {bias} \
             {spsa_a} {spsa_c} \
             {spsa_a_out} {spsa_c_out} \
@@ -70,7 +71,10 @@ if __name__ == "__main__":
     DEFAULT_PARAMS = {
         "scenario": SCENARIO,
         "bias": 1,
-        "noise": 20,
+        "noise": 10,
+        "synthetic_counts": True,
+        "calibrate_demand": True,
+        "calibrate_supply": False
         # Add other default parameters here
     }
 

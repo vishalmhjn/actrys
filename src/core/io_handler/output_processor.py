@@ -3,13 +3,10 @@ import pandas as pd
 import subprocess
 import os
 from sim_handler.scenario_generator import config
-
+from params import additonal_identifier, output_identifier
 
 PATH_SUMO_TOOLS = os.environ.get("PATH_SUMO_TOOLS")
 REAL_COUNT_INTERVAL = config["DEMAND_INTERVAL"]
-
-additonal_identifier = "inductionLoop_id"
-output_identifier = "interval_id"
 
 
 def add_noise(x, perc_var, mu=1):

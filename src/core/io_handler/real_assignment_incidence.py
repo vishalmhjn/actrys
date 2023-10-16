@@ -166,7 +166,9 @@ def generate_detector_incidence(
         edge_col = "edge_id"
         dtd = pd.read_csv(path_additional[:-3] + "csv", sep=";")
         dtd.dropna(subset=[additonal_identifier], inplace=True)
-        dtd[edge_col] = dtd[additonal_identifier].apply(lambda x: x.split("_")[1])
+        # in case of errors when genrating weight matrices check this line
+        # the identifier of the edge shall be selected for getting unique detectors
+        dtd[edge_col] = dtd[additonal_identifier].apply(lambda x: x.split("_")[-2])
     else:
         edge_col = "det_id"
         dtd = pd.read_csv(path_true_count)

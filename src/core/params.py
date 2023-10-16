@@ -59,7 +59,7 @@ noise_prior = 10
 exploration_noise = 0
 
 # number of sequential calibration runs
-n_sequential = 5
+n_sequential = 1
 
 # number of bayesian initial exploration for spsa tuning
 n_init_spsa_tune = 30
@@ -72,3 +72,7 @@ n_init_supply = 20
 
 # number of bayesian iterations for supply
 n_iterate_supply = 10
+
+# name of the xml tags in the detector data
+additonal_identifier = "inductionLoop_id"  # "e1Detector_id"
+output_identifier = "interval_id"
