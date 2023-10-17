@@ -51,9 +51,9 @@ set_environment_variables() {
     export PATH_OUTPUT_SPEED=../../$SCENARIO/$temp_scenario_name/edge_data_3600
     export PATH_REAL_SPEED=../../$SCENARIO/$temp_scenario_name/real_edge_data_3600.csv
     
-    export FILE_MATCH_DETECTORS=../../$SCENARIO/matchable_detectors.csv
-    export FILE_REAL_COUNTS=../../$SCENARIO/real_counts.csv
-    export FILE_REAL_SPEEDS=../../$SCENARIO/dummy_edge_data_3600.csv
+    export FILE_MATCH_DETECTORS=../../$SCENARIO/sample_real_world_data/matchable_detectors.csv
+    export FILE_REAL_COUNTS=../../$SCENARIO/sample_real_world_data/dummy_counts_data.csv
+    export FILE_REAL_SPEEDS=../../$SCENARIO/sample_real_world_data/dummy_speed_data.csv
     
     export TOD_START=7
     export TOD_END=9
