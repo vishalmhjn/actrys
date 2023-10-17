@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import invgauss
 
 
-from core.apriori_demand import temporal_kernel
+from apriori_demand import temporal_kernel
 
 
 def create_dummy_OD(

@@ -52,14 +52,11 @@ if which_algo == "wspsa":
 # for decaying the a and c for simulation out-of-loop
 learning_decay_factor = 1.05
 
-# added noise in the true estimates to get the prior beliefs
-noise_prior = 10
-
 # exploration noise for bagging runs
-exploration_noise = 0
+exploration_noise = 30
 
 # number of sequential calibration runs
-n_sequential = 1
+n_sequential = 10
 
 # number of bayesian initial exploration for spsa tuning
 n_init_spsa_tune = 30
