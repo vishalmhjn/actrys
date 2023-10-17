@@ -139,7 +139,25 @@ Following procedure for running <b>Black-box or dynamic simulation </b> scenario
 
 Following procedure for running <b>Black-box or dynamic simulation </b> scenarios with real-world counts:
 
-_todo_
+- Specify the paths to real data in the [wrapper.sh](src/wrapper/wrapper.sh). For example:
+
+  ```sh
+  export FILE_MATCH_DETECTORS=../../$SCENARIO/sample_real_world_data/matchable_detectors.csv
+  export FILE_REAL_COUNTS=../../$SCENARIO/sample_real_world_data/dummy_counts_data.csv
+  export FILE_REAL_SPEEDS=../../$SCENARIO/sample_real_world_data/dummy_speed_data.csv
+  ```
+
+- Specify the detector identifier in the [params](src/core/params.py) as per the [detector file](munich/additional.add.xml) (_<e1Detector id=""_).
+
+  ```
+  additonal_identifier = "e1Detector_id"
+  output_identifier = "interval_id"
+  ```
+
+- Finally, run the following in terminal to run the **Munich** scenario:
+  ```sh
+  python runSim.py munich
+  ```
 
 ## Citation
 
