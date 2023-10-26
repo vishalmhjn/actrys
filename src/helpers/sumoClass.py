@@ -155,8 +155,8 @@ if __name__ == "__main__":
 
     # create TAZs
     taz = Create_TAZs(
-        "../scenario_munich/network.geojson",
-        "../data/munich_zones_manual/manual_zones_munich_2.geojson",
+        "../../ua_aqt/network.geojson",
+        "../../ua_aqt/taz.geojson",
     )
-    t = taz.get_tazs("id")
-    taz.write_tazs("../msm_scenario_munich/new_taZes.taz.xml")
+    t = taz.get_tazs("NO")
+    taz.write_tazs("../../ua_aqt/tazes.taz.xml")
