@@ -1,12 +1,10 @@
 import sys
 import os
 from datetime import datetime
-
 import numpy as np
 import json
 import matplotlib.pyplot as plt
 import pandas as pd
-
 import utilities
 
 from optimization_handler.gof import gof_eval, squared_deviation
@@ -15,10 +13,8 @@ from synthetic_experiment import (
     synthetic_scenario_orchestrator,
     synthetic_simulation,
 )
-
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-
 from bayes_opt import BayesianOptimization
 from bayes_opt.logger import JSONLogger
 from bayes_opt.event import Events
@@ -83,7 +79,17 @@ def save_params(d, params):
 
 
 def add_noise(x, perc_var, mu=0):
-    """Add noise to a synthetic data"""
+    """
+    Add noise to a synthetic data.
+
+    Args:
+        x (list): Input data.
+        perc_var (float): Percentage variation.
+        mu (float, optional): Mean of the noise. Defaults to 0.
+
+    Returns:
+        list: Noisy data.
+    """
     noisy_od = []
     for i in x:
         noisy_od.append(int(mu * i) + int(np.random.randn() * perc_var * i))
@@ -104,8 +110,25 @@ def objective_function(
     eval_rmsn=False,
     which_perturb="positive",
 ):
-    """This is the objective function which estimates the rmsn between the
-    True and Simulaed detector counts
+    """
+    Objective function to estimate RMSN between true and simulated detector counts.
+
+    Args:
+        X (array): Simulated detector counts.
+        X_true (array): True detector counts.
+        X_prior (array): Prior detector counts.
+        W (array): Weights.
+        count_init (array): Initial count data.
+        speed_init (array): Initial speed data.
+        traffic_state (str): Traffic state.
+        interval (int): Time interval.
+        num_detectors (int): Number of detectors.
+        weighted (bool, optional): Use weighted RMSN. Defaults to False.
+        eval_rmsn (bool, optional): Evaluate RMSN. Defaults to False.
+        which_perturb (str, optional): Perturbation type. Defaults to "positive".
+
+    Returns:
+        float: RMSN value.
     """
 
     X = np.array([i for i in np.where(X < 0, 0, X)])
@@ -223,12 +246,30 @@ def calibration_handler(
     spsa_c,
     bounds,
 ):
-    """Wrapper for calibration
-    TODO when the random pertubation lands in a negative range
-    As expected, SUMO gives an errors and does not generates new trips
-    So optimizer uses the same routes as last time for goodness evaluation
-    Need to think a better way to handle this, so that negative values are totally
-    avoided"""
+    """
+    Wrapper for calibration.
+
+    Args:
+        obj_func (function): Objective function for calibration.
+        x0 (array): Initial parameters for optimization.
+        x_true (array): True detector counts.
+        x_prior (array): Prior detector counts.
+        W (array): Weights.
+        orig_count (array): Original count data.
+        orig_speed (array): Original speed data.
+        t_state (str): Traffic state.
+        interval (int): Time interval.
+        num_detectors (int): Number of detectors.
+        num_od_pairs (int): Number of OD pairs.
+        beta_momentum (float): Beta momentum parameter.
+        network_correlation (bool): Use network correlation.
+        spsa_a (float): SPSA parameter 'a'.
+        spsa_c (float): SPSA parameter 'c'.
+        bounds (tuple): Parameter bounds.
+
+    Returns:
+        dict: Result of the calibration optimization.
+    """
 
     sf = SolutionFinder(obj_func, bounds=bounds, x0=x0)
     global which_algo
@@ -404,14 +445,31 @@ def spsa_tune_function(log_spsa_a, log_spsa_c):
 
 
 if __name__ == "__main__":
+    # Evaluate the 'run_scenario' string to determine whether to execute the scenario
     execute_scenario = eval(run_scenario)
-    num_od = 50  # 50
-    num_od_pairs = num_od**2
-    num_detectors = 500  # 1000 #600
+
+    # Number of OD pairs
+    num_od = 50
+
+    # Calculate the total number of OD pairs
+    num_od_pairs = num_od ** 2
+
+    # Number of detectors
+    num_detectors = 500
+
+    # Time interval in hours
     interval = 1
+
+    # Start time of day (TOD) in hours
     TOD_S = 7
+
+    # End time of day (TOD) in hours
     TOD_E = 10
+
+    # Whether to plot results
     plot = True
+
+    # Network correlation parameter
     network_correlation = 0.2
     if execute_scenario:
         OD, W, sim, speed, t_state = synthetic_scenario_orchestrator(
@@ -660,36 +718,13 @@ if __name__ == "__main__":
                 )
 
                 plt.tight_layout()
-                plt.savefig(
-                    pre_string
-                    + "/results_"
-                    + str(bagging)
-                    + "a_"
-                    + str(spsa_a)
-                    + "n_"
-                    + str(noise_param)
-                    + "_"
-                    + "b_"
-                    + str(int(100 * bias_param))
-                    + "_"
-                    + str(num_od)
-                    + "_"
-                    + str(num_detectors)
-                    + "_"
-                    + str(n_iterations)
-                    + "_"
-                    + str(weight_od)
-                    + "_"
-                    + str(weight_counts)
-                    + "_"
-                    + str(weight_speed)
-                    + "_"
-                    + str(which_algo)
-                    + "_"
-                    + file_idenfier
-                    + ".png",
-                    dpi=300,
+                result_filename = (
+                    f"{pre_string}/results_{bagging}a_{spsa_a}n_{noise_param}_"
+                    f"b_{int(100 * bias_param)}_{num_od}_{num_detectors}_{n_iterations}_"
+                    f"{weight_od}_{weight_counts}_{weight_speed}_{which_algo}_{file_idenfier}.png"
                 )
+
+                plt.savefig(result_filename, dpi=300)
                 plt.close()
 
                 od_bag_list.append(best_od)
@@ -709,35 +744,13 @@ if __name__ == "__main__":
             if plot:
                 fig, ax = plt.subplots(1, 1, figsize=(10, 6))
                 ax = utilities.plot_loss_curve_synthetic(ax, res_dict, spsa_a, spsa_c)
-                plt.savefig(
-                    pre_string
-                    + "/loss_"
-                    + "a_"
-                    + str(spsa_a)
-                    + "n_"
-                    + str(noise_param)
-                    + "_"
-                    + "b_"
-                    + str(int(100 * bias_param))
-                    + "_"
-                    + str(num_od)
-                    + "_"
-                    + str(num_detectors)
-                    + "_"
-                    + str(n_iterations)
-                    + "_"
-                    + str(weight_od)
-                    + "_"
-                    + str(weight_counts)
-                    + "_"
-                    + str(weight_speed)
-                    + "_"
-                    + str(which_algo)
-                    + file_idenfier
-                    + "_"
-                    + ".png",
-                    dpi=300,
+                loss_filename = (
+                    f"{pre_string}/loss_a_{spsa_a}n_{noise_param}_"
+                    f"b_{int(100 * bias_param)}_{num_od}_{num_detectors}_{n_iterations}_"
+                    f"{weight_od}_{weight_counts}_{weight_speed}_{which_algo}{file_idenfier}.png"
                 )
+
+                plt.savefig(loss_filename, dpi=300)
                 plt.legend()
                 plt.close()
 
@@ -765,37 +778,14 @@ if __name__ == "__main__":
                 )
 
                 plt.tight_layout()
-                plt.savefig(
-                    pre_string
-                    + "/results_"
-                    + str(beta_momentum)
-                    + "_"
-                    + "a_"
-                    + str(spsa_a)
-                    + "n_"
-                    + str(noise_param)
-                    + "_"
-                    + "b_"
-                    + str(int(100 * bias_param))
-                    + "_"
-                    + str(num_od)
-                    + "_"
-                    + str(num_detectors)
-                    + "_"
-                    + str(n_iterations)
-                    + "_"
-                    + str(weight_od)
-                    + "_"
-                    + str(weight_counts)
-                    + "_"
-                    + str(weight_speed)
-                    + "_"
-                    + str(which_algo)
-                    + "_"
-                    + file_idenfier
-                    + ".png",
-                    dpi=300,
+                result_filename = (
+                    f"{pre_string}/results_{beta_momentum}_"
+                    f"a_{spsa_a}n_{noise_param}_"
+                    f"b_{int(100 * bias_param)}_{num_od}_{num_detectors}_{n_iterations}_"
+                    f"{weight_od}_{weight_counts}_{weight_speed}_{which_algo}{file_idenfier}.png"
                 )
+
+                plt.savefig(result_filename, dpi=300)
 
                 if debug:
                     plt.imshow(
@@ -838,16 +828,9 @@ if __name__ == "__main__":
                     }
                 )
 
-                save_od.to_csv(
-                    pre_string
-                    + "/mean_"
-                    + str(beta_momentum)
-                    + "_"
-                    + str(bagging_run)
-                    + "_"
-                    + "od.csv",
-                    index=None,
-                )
+                od_filename = f"{pre_string}/mean_{beta_momentum}_{bagging_run}_od.csv"
+
+                save_od.to_csv(od_filename, index=None)
 
                 res_dict = save_params(
                     res_dict,

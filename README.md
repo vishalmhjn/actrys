@@ -1,54 +1,54 @@
-# actrys (Automated Calibration for TRaffic Simulations)
+# actrys (Automated Calibration for Traffic Simulations)
 
-[![linux](https://github.com/vishalmhjn/actrys/actions/workflows/main.yml/badge.svg?branch=main&event=push)](https://github.com/vishalmhjn/actrys/actions/workflows/main.yml)
+[![Build Status](https://github.com/vishalmhjn/actrys/actions/workflows/main.yml/badge.svg?branch=main&event=push)](https://github.com/vishalmhjn/actrys/actions/workflows/main.yml)
 
-<b>actrys</b> is a Python-based platform to calibrate the traffic simulations in SUMO.
+**actrys** is a Python-based platform designed for calibrating traffic simulations in SUMO (Simulation of Urban Mobility).
 
 <p align="center">
-<img src="resources/munich_traffic_flows.gif" alt="traffic_visualization" width="450" align="center"/>
+  <img src="resources/munich_traffic_flows.gif" alt="Traffic Visualization" width="450"/>
 </p>
 
 <p align="center">
-<img src="resources/munich_network_speeds.gif" alt="traffic_visualization" width="500" align="center"/>
+  <img src="resources/munich_network_speeds.gif" alt="Traffic Visualization" width="500"/>
 </p>
 
 ## Overview
 
-This repository contains code for:
+This repository includes code for:
 
-- Input/ Output interfaces to call SUMO, initialize and simulate the scenarios, and collect the output data.
-- Calibration components:
-  - Optimization strategy: SPSA, W-SPSA, Bayesian optimization
-  - Goodness-of-fit criteria
-- Assignment matrix extraction based on the simulated routes
-- Synthetic simulator with a static traffic assignment for prototyping.
-- Utilities
-  - Preparing and processing SUMO input files such as network downloading, trip filtering, adding detectors, file format conversion
-  - Plotting
+- **Input/Output Interfaces**: To interact with SUMO, initialize and simulate scenarios, and collect output data.
+- **Calibration Components**:
+  - Optimization Strategies: SPSA, W-SPSA, Bayesian optimization.
+  - Goodness-of-Fit Criteria.
+- **Assignment Matrix Extraction**: Based on the simulated routes.
+- **Synthetic Simulator**: For prototyping with static traffic assignment.
+- **Utilities**: For preparing and processing SUMO input files, such as network downloading, trip filtering, adding detectors, and file format conversion.
+- **Plotting Tools**.
 
 ## Framework
 
-The platform implements a step-wise approach for the sequential calibration of
+The platform follows a step-wise approach for sequential calibration of:
 
-- Demand parameters or Origin-Destination (OD) flows
-- Supply parameters for a mesoscopic simulation
+- Demand parameters or Origin-Destination (OD) flows.
+- Supply parameters for mesoscopic simulations.
 
 To achieve this, the following process is followed:
 
-- Bias-correction in OD matrix using one-shot heuristic
-- Bayesian optimization to fine-tune SPSA parameters using analytical or static assignment matrix approximated from the simulator
-- W-SPSA with ensembling techniques with cold and warm restarts
-- Supply calibration using Bayesian optimization
+1. **Bias-Correction in OD Matrices**: Using a one-shot heuristic.
+2. **Bayesian Optimization**: Fine-tuning SPSA parameters using an analytical or static assignment matrix approximated from the simulator.
+3. **W-SPSA with Ensembling Techniques**: Including cold and warm restarts.
+4. **Supply Calibration** using Bayesian optimization.
 
-Currently, the platform can handle link-based Measures of Performance (MOP) such as link traffic counts and link speeds in the calibration.
+Currently, the platform can handle link-based Measures of Performance (MOP) such as link traffic counts and link speeds in the calibration process.
 
-This platform can calibrate two kinds of scenarios:
+This platform can calibrate two types of scenarios:
 
-- <b>Analytical or static simulator: </b> This is used for prototyping. Here, the assignment matrix is randomly generated. Different parameters control this random assignment matrix and map the OD flows to link counts. No external file or data are needed to run this scenario, except a few parameters which control the scenario properties.
-- <b>Black-box or dynamic simulator: </b> SUMO is used in this scenario. We use the term "black box" since we do not have an analytical expression of the dynamic demand assignment on the network. Only based on the inputs (OD matrices) and outputs (trip routes) of the SUMO simulation can we infer how the assignment was done during the simulation. The simulation encompasses:
-  - Creation of trips from time-dependent OD matrices
-  - Routing for the trips based on the route-choice algorithm
-  - Dynamic network conditions, traffic propagation and re-routing
+- **Analytical or Static Simulator**: Used for prototyping, this scenario generates a random assignment matrix controlled by different parameters to map OD flows to link counts. No external data files are needed to run this scenario, except for a few parameters that control the scenario properties.
+
+- **Black-box or Dynamic Simulator (SUMO)**: This scenario includes:
+  - Creation of trips from time-dependent OD matrices.
+  - Routing for trips based on the route-choice algorithm.
+  - Dynamic network conditions, traffic propagation, and re-routing.
 
 ## Architecture
 
@@ -56,111 +56,131 @@ This platform can calibrate two kinds of scenarios:
 <img src="resources/architecture.png" alt="architecture" width="500" align="center"/>
 </p>
 
-## Input preparation for SUMO simulations
+## Input Preparation for SUMO Simulations
 
-<b>Black-box or dynamic simulator </b> scenarios need quite-a-few formatted inputs. Example files are provided in [munich](munich/).
+**Black-box or dynamic simulator** scenarios require several formatted inputs. Example files are provided in the [munich](munich/) directory:
 
-- **Network file**: Standard SUMO network [(example)](munich/network.net.xml)
-- **OD matrices**: Time-dependent specification of trips between Origin-Destination zones. [(example)](munich/demand/)
-- **Link sensors**: File specifying the properties (location, frequency of data collection) of edge or link sensors [(example)](munich/additional.add.xml)
-- **Traffic Analysis Zones**: Mapping between origin-destination zones and network edges [(example)](munich/tazes.taz.xml)
+- **Network File**: A standard SUMO network [(Example)](munich/network.net.xml).
+- **OD Matrices**: Time-dependent specification of trips between Origin-Destination zones [(Example)](munich/demand/).
+- **Link Sensors**: A file specifying the properties (location and data collection frequency) of edge or link sensors [(Example)](munich/additional.add.xml).
+- **Traffic Analysis Zones**: Mapping between origin-destination zones and network edges [(Example)](munich/tazes.taz.xml).
 
 ## Custom Synthetic Scenario with SUMO
 
-For a custom synthetic scenario, this process is followed:
+For a custom synthetic scenario, the following process is followed:
 
-- A true demand is simulated to obtain "_real sensor measurements_."
-- Subsequently, the true demand is perturbed by the addition of bias and variance.
-- Perturbed demand is simulated, and corresponding simulation sensor measurements are compared with the "\_real sensor measurements." The calibrator aims to recover the true demand matrix based on the discrepancy between real and simulated.
+1. A true demand is simulated to obtain "_real sensor measurements_."
+2. Subsequently, the true demand is perturbed by the addition of bias and variance.
+3. Perturbed demand is simulated, and corresponding simulation sensor measurements are compared with the "_real sensor measurements_." Based on the discrepancy between real and simulated data, the calibrator aims to recover the true demand matrix.
 
 ## Custom Real Scenario with SUMO
 
-For a real scenario, we use real counts from sensor measurements. These measurements could be open data from traffic operator websites or the city's open data portals. In this case, additional inputs are needed to use the observed counts (or speeds) as an input:
+For a real scenario, you can use real sensor data such as link volumes or link speeds. These measurements could be obtained from open data sources, traffic operator websites, or city open data portals. In this case, additional input is needed to use the observed counts as an input:
 
-- **Observed sensor data** such as link volumes or link speeds to be used as MOP [(example)](munich/sample_real_world_data/dummy_counts_data.csv). Further, you can also specify a list of detectors [(detector matching)](munich/sample_real_world_data/matchable.csv) to be used for creating the W-SPSA weight matrix ignoring/ filtering the faulty detectors with missing or no data.
-- In a real scenario, true demand is not known. We have an initial demand matrix, which is simulated, and corresponding simulation sensor measurements are compared with the real sensor measurements. The calibrator aims to recover the true demand matrix based on the discrepancy between real and simulated.
+1. **Observed Sensor Data**: Such as link volumes or link speeds to be used as Measures of Performance (MOP) [(Example)](munich/realdata.csv).
+
+2. In a real scenario, the true demand is not known. What you have is an initial demand matrix, which is simulated. Corresponding simulation sensor measurements are compared with the real sensor measurements. Based on the discrepancy between real and simulated data, the calibrator aims to recover the true demand matrix.
 
 ## Requirements
 
-- The framework has been tested on **SUMO 1.13.0** and **Python 3.8** on both Ubuntu 18.04 and macOS 13.2. You should create a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-virtualenv) using
-  ```sh
-  cd
-  python3 -m venv actrys
-  ```
-- Then activate the virtual environment using
-  ```sh
-  source ~/actrys/bin/activate
-  ```
-- Make the parent folder of the repository your current directory:
-  ```sh
-  cd path/to/your/github/repository/actrys
-  ```
-- Install the Python [requirements](requirements.txt) using:
-  ```sh
-  pip install -r requirements.txt
-  ```
+The framework has been tested on **SUMO 1.13.0** and **Python 3.8** on both Ubuntu 18.04 and macOS 13.2. To set up your environment, follow these steps:
+
+1. Create a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-virtualenv) using the following commands:
+
+   ```sh
+   cd
+   python3 -m venv actrys
+   ```
+
+2. Then activate the virtual environment using
+
+   ```sh
+   source ~/actrys/bin/activate
+   ```
+
+3. Make the parent folder of the repository your current directory:
+
+   ```sh
+   cd path/to/your/github/repository/actrys
+   ```
+
+4. Install the Python [requirements](requirements.txt) using:
+   ```sh
+   pip install -r requirements.txt
+   ```
 
 ## Execution
 
-Following procedure for running <b>Analytical or static simulation </b> scenarios.
+### Running Analytical or Static Simulation Scenarios
 
-- Set the current working directory to [src/wrapper](src/wrapper/) in the Command line interface, as above.
+1. Set the current working directory to [src/wrapper](src/wrapper/) in the Command Line Interface (CLI):
 
-  ```sh
-  cd src/wrapper
-  ```
+   ```sh
+   cd src/wrapper
+   ```
 
-- The Python file is the overall wrapper [run_analytical_sim.py](src/wrapper/run_analytical_sim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
+2. The Python file serving as the overall wrapper is [run_analytical_sim.py](src/wrapper/run_analytical_sim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
 
-- Run the following in the terminal:
-  ```sh
-  python runAnalyticalSim.py
-  ```
-- Outputs are stored in [synthetic_sims](synthetic_sims/) folder
+3. The scenario parameters such as number of OD pairs and detectors can be changed in the [synthetic_calibrator.py](src/core/synthetic_calibrator.py) directly.
 
-Following procedure for running <b>Black-box or dynamic simulation </b> scenarios with synthetic counts:
+4. Run the following command in the terminal:
 
-- First, [paths](src/core/paths.py) and [parameters](src/core/params.py) are to be specified. The platform has not been tested on Windows OS, so the Paths might need to be adapted.
+   ```sh
+   python runAnalyticalSim.py
+   ```
 
-- Set path to the SUMO folder with SUMO_HOME variable. For example in OSX, it is generally stored at the following path for SUMO version 1.10.0. You can check the this [link](https://sumo.dlr.de/docs/Basics/Basic_Computer_Skills.html#sumo_home) for more details.
+5. Outputs are stored in [synthetic_sims](synthetic_sims/) folder
 
-  ```sh
-  export SUMO_HOME="/usr/local/Cellar/sumo/1.10.0/share/sumo"
-  ```
+### Running Black-box or Dynamic Simulation Scenarios with Synthetic Counts
 
-- Then, the current working directory should be changed to [src/wrapper](src/wrapper/) in the command line interface. You can set this from home directory by
+1. First, specify the paths in [paths](src/core/paths.py) and [parameters](src/core/params.py). Please note that the platform has not been tested on Windows OS, so paths may need to be adapted.
 
-  ```sh
-  cd src/wrapper
-  ```
+2. Set the path to the SUMO folder with the SUMO_HOME variable. For example, on macOS, it is generally stored at the following path for SUMO version 1.10.0. More details can be found in this [link](https://sumo.dlr.de/docs/Basics/Basic_Computer_Skills.html#sumo_home) for more details.
 
-- The Python file is the overall wrapper [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [wrapper.sh](src/wrapper/wrapper.sh). Run the following in terminal:
-  ```sh
-  python runSim.py munich
-  ```
-- Outputs are stored in [munich](munich/) folder
+   ```sh
+   export SUMO_HOME="/usr/local/Cellar/sumo/1.10.0/share/sumo"
+   ```
 
-Following procedure for running <b>Black-box or dynamic simulation </b> scenarios with real-world counts:
+3. Change the current working directory to [src/wrapper](src/wrapper/) in the command line interface:
 
-- Specify the paths to real data in the [wrapper.sh](src/wrapper/wrapper.sh). For example:
+   ```sh
+   cd src/wrapper
+   ```
 
-  ```sh
-  export FILE_MATCH_DETECTORS=../../$SCENARIO/sample_real_world_data/matchable_detectors.csv
-  export FILE_REAL_COUNTS=../../$SCENARIO/sample_real_world_data/dummy_counts_data.csv
-  export FILE_REAL_SPEEDS=../../$SCENARIO/sample_real_world_data/dummy_speed_data.csv
-  ```
+4. The Python file serving as the overall wrapper is [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [wrapper.sh](src/wrapper/wrapper.sh). Before running the simulation for synthetic counts, set the variable **synthetic_counts** as True in [run_sim.py](src/wrapper/run_sim.py).
 
-- Specify the detector identifier in the [params](src/core/params.py) as per the [detector file](munich/additional.add.xml) (_<e1Detector id=""_).
+5. Run the following command in the terminal to run the simulation (e.g., for Munich):
 
-  ```
-  additonal_identifier = "e1Detector_id"
-  output_identifier = "interval_id"
-  ```
+   ```sh
+   python runSim.py munich
+   ```
 
-- Finally, run the following in terminal to run the **Munich** scenario:
-  ```sh
-  python runSim.py munich
-  ```
+6. Outputs are stored in [munich](munich/) folder
+
+### Following procedure for running <b>Black-box or dynamic simulation </b> scenarios with real-world counts:
+
+1. Specify the paths to real data in [wrapper.sh](src/wrapper/wrapper.sh). For example:
+
+   ```sh
+   export FILE_MATCH_DETECTORS=../../$SCENARIO/ sample_real_world_data/matchable_detectors.csv
+   export FILE_REAL_COUNTS=../../$SCENARIO/sample_real_world_data/dummy_counts_data.csv
+   export FILE_REAL_SPEEDS=../../$SCENARIO/sample_real_world_data/dummy_speed_data.csv
+   ```
+
+2. Specify the detector identifier in the [params](src/core/params.py) as per the [detector file](munich/additional.add.xml) (_<e1Detector id=""_).
+
+   ```
+   additonal_identifier = "e1Detector_id"
+   output_identifier = "interval_id"
+   ```
+
+3. Before running the simulation scenario, set the variable **synthetic_counts** as False in [run_sim.py](src/wrapper/run_sim.py). This is because, we want to use the real data in this case.
+
+4. Finally, run the following command in the terminal to run the simulation for the **Munich** scenario:
+
+   ```sh
+   python runSim.py munich
+   ```
 
 ## Citation
 
