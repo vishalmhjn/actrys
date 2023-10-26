@@ -1,12 +1,5 @@
 from scipy import optimize
-import optimizationHandler.noisyOpt as noisyopt
-
-import platform
-
-sys_id = platform.system()
-
-
-objective_val = []
+import optimization_handler.noisy_opt as noisyopt
 
 
 class SolutionFinder(object):

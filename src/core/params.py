@@ -26,9 +26,9 @@ set_spa = os.environ.get("set_spa")
 
 which_algo = os.environ.get("which_algo")
 
-weight_counts = int(os.environ.get("weight_counts"))
-weight_od = int(os.environ.get("weight_od"))
-weight_speed = int(os.environ.get("weight_speed"))
+weight_counts = float(os.environ.get("weight_counts"))
+weight_od = float(os.environ.get("weight_od"))
+weight_speed = float(os.environ.get("weight_speed"))
 bagging_run = int(os.environ.get("bagging_run"))
 
 count_noise_param = int(os.environ.get("count_noise_param"))
@@ -47,19 +47,16 @@ estimator = os.environ.get("estimator")
 print("Using " + estimator + " for selecting the best fit")
 
 if which_algo == "wspsa":
-    wspsa_thrshold = float(os.environ.get("wspsa_thrshold"))
+    wspsa_thrshold = float(os.environ.get("wspsa_threshold"))
 
 # for decaying the a and c for simulation out-of-loop
 learning_decay_factor = 1.05
 
-# added noise in the true estimates to get the prior beliefs
-noise_prior = 10
-
 # exploration noise for bagging runs
-exploration_noise = 0
+exploration_noise = 10
 
 # number of sequential calibration runs
-n_sequential = 5
+n_sequential = 3
 
 # number of bayesian initial exploration for spsa tuning
 n_init_spsa_tune = 30
@@ -68,7 +65,11 @@ n_init_spsa_tune = 30
 n_iterate_spsa_tune = 30
 
 # number of bayesian initial exploration for supply
-n_init_supply = 20
+n_init_supply = 50
 
 # number of bayesian iterations for supply
-n_iterate_supply = 10
+n_iterate_supply = 50
+
+# name of the xml tags in the detector data
+additonal_identifier = "inductionLoop_id"  # "e1Detector_id"
+output_identifier = "interval_id"

@@ -1,24 +1,39 @@
 import pandas as pd
 import geopandas as gpd
 import geojson
-import csv, json
+import csv
+import json
 from geojson import Feature, FeatureCollection, Point
 
-
 class Sumo_Network:
-    def __init__(
+    """
+    A class for handling SUMO network data.
+    """
+
+    def __init(
         self,
         path_network_csv="../data/paris_auto.net.csv",
         path_edge_csv="../data/plainnet.edg.csv",
     ):
+        """
+        Initialize the Sumo_Network object.
+
+        Parameters:
+        - path_network_csv (str): Path to the network CSV file.
+        - path_edge_csv (str): Path to the edge CSV file.
+        """
         # XML2CSV
         self.path_edge = path_edge_csv
         # XML2CSV
         self.path_network_csv = path_network_csv
 
     def write_edges(self):
-        """function to write the number of lanes and length of an edge, for placing the detectors
-        shst match ../data/sumo_network.geojson --out=sumo_network.geojson --snap-intersections --follow-line-direction
+        """
+        Write edge data to a DataFrame.
+
+        Returns:
+        - df_edge_length (pd.DataFrame): DataFrame with edge length data.
+        - df_edge_lanes (pd.DataFrame): DataFrame with edge lanes data.
         """
         df_net = pd.read_csv(self.path_network_csv, sep=";", error_bad_lines=False)
         temp = df_net[["edge_id", "lane_id", "lane_length"]].dropna()
@@ -28,7 +43,6 @@ class Sumo_Network:
 
         df_edge = pd.read_csv(self.path_edge, sep=";", error_bad_lines=False)
         df_edge = df_edge[df_edge["edge_id"].notna()]
-        # df_edge = df_edge[df_edge['edge_shape'].notna()]
         df_edge_lanes = df_edge[["edge_id", "edge_numLanes"]]
 
         edge_len["edge_id"] = edge_len["edge_id"].astype(str)
@@ -36,12 +50,15 @@ class Sumo_Network:
 
         df_edge_length = pd.merge(df_edge_lanes, edge_len, on="edge_id")
         df_edge_length = df_edge_length.drop_duplicates(subset="edge_id")
-        # df_edge_length.to_csv("../scenario_munich/temp_check.csv", index=None)
         return df_edge_length, df_edge_lanes
 
     def sumo_net_to_geojson(self, output_path="../data/sumo_network.geojson"):
-        """convert sumo network to geojson for later use in shared streets and
-        TAZs"""
+        """
+        Convert SUMO network data to GeoJSON format.
+
+        Parameters:
+        - output_path (str): Path to the output GeoJSON file.
+        """
         df_edge = pd.read_csv(self.path_edge, sep=";")
 
         df_edge = df_edge[df_edge["edge_id"].notna()]
@@ -80,21 +97,37 @@ class Sumo_Network:
         d["type"] = "FeatureCollection"
         d["features"] = li
         with open(output_path, "w") as f:
-            f.write(json.dumps(d, sort_keys=False, indent=4))
-
+            f.write(json.dumps(d, sort_keys=False, indent=4)
 
 class Create_TAZs:
-    def __init__(
+    """
+    A class for creating TAZs (Traffic Analysis Zones) from SUMO network data.
+    """
+
+    def __init(
         self,
         path_sumo_network_geojson="../data/sumo_network.geojson",
-        # this geojson should be the manually created as sumolib doesnot caontains link_type
         path_zones_geojson="../data/paris_communes.json",
     ):
+        """
+        Initialize the Create_TAZs object.
+
+        Parameters:
+        - path_sumo_network_geojson (str): Path to the SUMO network GeoJSON file.
+        - path_zones_geojson (str): Path to the zones GeoJSON file.
+        """
         self.path_network = path_sumo_network_geojson
         self.path_zones = path_zones_geojson
         self.network, self.zones = self.read_geojson()
 
     def read_geojson(self):
+        """
+        Read GeoJSON files for network and zones.
+
+        Returns:
+        - network (geojson.FeatureCollection): Network GeoJSON data.
+        - zones (geojson.FeatureCollection): Zones GeoJSON data.
+        """
         with open(self.path_zones) as f:
             zones = geojson.load(f)
         with open(self.path_network) as f:
@@ -102,12 +135,17 @@ class Create_TAZs:
         return network, zones
 
     def get_tazs(self, attribute="MOVEMENT_ID"):
-        """function to get the taz file using spatial join"""
+        """
+        Get TAZs using spatial join based on a specified attribute.
+
+        Parameters:
+        - attribute (str): Attribute to use for spatial join.
+
+        Returns:
+        - taz (gpd.GeoDataFrame): TAZs GeoDataFrame.
+        """
         self.osm_attr = attribute
         zones = gpd.GeoDataFrame(self.zones["features"])
-        # MOVEMENT_ID is the column of the id of the shape object in the shape
-        # or geojson file. This should be changed as per the file. This has nothing to do with the
-        # UBER data
         zones["id"] = zones["properties"].apply(lambda x: x[self.osm_attr])
         zones.drop(columns=["type", "properties"], inplace=True)
 
@@ -120,15 +158,16 @@ class Create_TAZs:
         return taz
 
     def write_tazs(self, output_path="../data/taZes.taz.xml"):
+        """
+        Write TAZ data to a file in XML format.
+
+        Parameters:
+        - output_path (str): Path to the output TAZ XML file.
+        """
         taz = self.get_tazs(attribute=self.osm_attr)
         a = """<tazs>"""
         b = ""
-        ##### here is a big assumption on the creation of the trips
-        ##### only sceondary and tertiary roads are used
-        ##### this could be changed based on land-use density based trip creation
-        for i in taz[
-            taz["link_type"].isin(["highway.secondary", "highway.tertiary"])
-        ].id.unique():  #'highway.primary' use when lower roads are missing
+        for i in taz[taz["link_type"].isin(["highway.secondary", "highway.tertiary"])].id.unique():
             temp = taz[taz.id == i]["edge_id"]
             x = list(temp)
             b = (
@@ -140,23 +179,23 @@ class Create_TAZs:
                 + str(i + 1)
                 + '"'
                 + """/>"""
-            )  # +1 in the zone if for tomtom data
+            )
         c = """</tazs>"""
         file_text = a + b + c
         with open(output_path, "w") as f:
             f.write(file_text)
             f.close()
 
-
 if __name__ == "__main__":
-    # convert sumo network_to_geojson
+    # Example usage:
+    # Convert SUMO network to GeoJSON
     # geo = Sumo_Network()
     # geo.sumo_net_to_geojson()
 
-    # create TAZs
+    # Create TAZs
     taz = Create_TAZs(
-        "../scenario_munich/network.geojson",
-        "../data/munich_zones_manual/manual_zones_munich_2.geojson",
+        "../../ua_aqt/network.geojson",
+        "../../ua_aqt/taz.geojson",
     )
-    t = taz.get_tazs("id")
-    taz.write_tazs("../msm_scenario_munich/new_taZes.taz.xml")
+    t = taz.get_tazs("NO")
+    taz.write_tazs("../../ua_aqt/tazes.taz.xml")

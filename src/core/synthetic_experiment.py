@@ -1,13 +1,10 @@
-from numpy.lib.function_base import vectorize
-import pandas as pd
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from sys import getsizeof
 from scipy.stats import invgauss
 
 
-from aprioriDemand import temporal_kernel
+from apriori_demand import temporal_kernel
 
 
 def create_dummy_OD(

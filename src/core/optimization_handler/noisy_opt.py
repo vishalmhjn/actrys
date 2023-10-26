@@ -26,7 +26,6 @@ import warnings
 from scipy import stats
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sys import getsizeof
 from joblib import Parallel, delayed, parallel_backend
 from sklearn.preprocessing import StandardScaler
 
@@ -248,9 +247,7 @@ def minimizeCompass(
             elif (
                 deltaeff >= deltatol * np.sum(np.abs(d))
             ) and (  # no refinement for boundary steps smaller than tolerance
-                (
-                    not errorcontrol and (funcm(xtest) > funcm(x) + feps)
-                )  # changed the sign vishal 07-01-2021
+                (not errorcontrol and (funcm(xtest) < funcm(x) + feps))  #
                 or (
                     errorcontrol
                     and funcm.test(xtest, x, type_="equality", alpha=alpha)
