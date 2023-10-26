@@ -247,9 +247,7 @@ def minimizeCompass(
             elif (
                 deltaeff >= deltatol * np.sum(np.abs(d))
             ) and (  # no refinement for boundary steps smaller than tolerance
-                (
-                    not errorcontrol and (funcm(xtest) > funcm(x) + feps)
-                )  # changed the sign vishal 07-01-2021
+                (not errorcontrol and (funcm(xtest) < funcm(x) + feps))  #
                 or (
                     errorcontrol
                     and funcm.test(xtest, x, type_="equality", alpha=alpha)

@@ -53,10 +53,10 @@ if which_algo == "wspsa":
 learning_decay_factor = 1.05
 
 # exploration noise for bagging runs
-exploration_noise = 30
+exploration_noise = 10
 
 # number of sequential calibration runs
-n_sequential = 10
+n_sequential = 3
 
 # number of bayesian initial exploration for spsa tuning
 n_init_spsa_tune = 30
@@ -65,10 +65,10 @@ n_init_spsa_tune = 30
 n_iterate_spsa_tune = 30
 
 # number of bayesian initial exploration for supply
-n_init_supply = 20
+n_init_supply = 50
 
 # number of bayesian iterations for supply
-n_iterate_supply = 10
+n_iterate_supply = 50
 
 # name of the xml tags in the detector data
 additonal_identifier = "inductionLoop_id"  # "e1Detector_id"
