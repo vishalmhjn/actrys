@@ -52,9 +52,6 @@ if which_algo == "wspsa":
 # for decaying the a and c for simulation out-of-loop
 learning_decay_factor = 1.05
 
-# added noise in the true estimates to get the prior beliefs
-noise_prior = 10
-
 # exploration noise for bagging runs
 exploration_noise = 10
 

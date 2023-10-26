@@ -26,7 +26,6 @@ import warnings
 from scipy import stats
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sys import getsizeof
 from joblib import Parallel, delayed, parallel_backend
 from sklearn.preprocessing import StandardScaler
 

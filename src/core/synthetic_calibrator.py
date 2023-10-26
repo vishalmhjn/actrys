@@ -11,7 +11,7 @@ import utilities
 
 from optimization_handler.gof import gof_eval, squared_deviation
 from optimization_handler.optimizer import SolutionFinder
-from core.synthetie_experiment import (
+from synthetic_experiment import (
     synthetic_scenario_orchestrator,
     synthetic_simulation,
 )
