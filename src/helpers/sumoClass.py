@@ -10,7 +10,7 @@ class Sumo_Network:
     A class for handling SUMO network data.
     """
 
-    def __init(
+    def __init__(
         self,
         path_network_csv="../data/paris_auto.net.csv",
         path_edge_csv="../data/plainnet.edg.csv",
@@ -97,14 +97,14 @@ class Sumo_Network:
         d["type"] = "FeatureCollection"
         d["features"] = li
         with open(output_path, "w") as f:
-            f.write(json.dumps(d, sort_keys=False, indent=4)
+            f.write(json.dumps(d, sort_keys=False, indent=4))
 
 class Create_TAZs:
     """
     A class for creating TAZs (Traffic Analysis Zones) from SUMO network data.
     """
 
-    def __init(
+    def __init__(
         self,
         path_sumo_network_geojson="../data/sumo_network.geojson",
         path_zones_geojson="../data/paris_communes.json",
@@ -167,7 +167,8 @@ class Create_TAZs:
         taz = self.get_tazs(attribute=self.osm_attr)
         a = """<tazs>"""
         b = ""
-        for i in taz[taz["link_type"].isin(["highway.secondary", "highway.tertiary"])].id.unique():
+        # for i in taz[taz["link_type"].isin(["highway.secondary", "highway.tertiary"])].id.unique():
+        for i in taz.id.unique():
             temp = taz[taz.id == i]["edge_id"]
             x = list(temp)
             b = (
@@ -189,13 +190,14 @@ class Create_TAZs:
 if __name__ == "__main__":
     # Example usage:
     # Convert SUMO network to GeoJSON
-    # geo = Sumo_Network()
-    # geo.sumo_net_to_geojson()
+    # geo = Sumo_Network(path_network_csv="network.net.csv",
+    #                    path_edge_csv="plainnet.edg.csv",)
+    # geo.sumo_net_to_geojson(output_path="network.geojson")
 
     # Create TAZs
     taz = Create_TAZs(
-        "../../ua_aqt/network.geojson",
-        "../../ua_aqt/taz.geojson",
+        "network.geojson",
+        "taz.geojson",
     )
     t = taz.get_tazs("NO")
-    taz.write_tazs("../../ua_aqt/tazes.taz.xml")
+    taz.write_tazs("tazes.taz.xml")
