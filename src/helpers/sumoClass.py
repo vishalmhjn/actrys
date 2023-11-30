@@ -167,7 +167,7 @@ class Create_TAZs:
         taz = self.get_tazs(attribute=self.osm_attr)
         a = """<tazs>"""
         b = ""
-        # for i in taz[taz["link_type"].isin(["highway.secondary", "highway.tertiary"])].id.unique():
+        taz = taz[taz["link_type"].isin(["highway.secondary", "highway.tertiary", "highway.residential", "highway.trunk"])]
         for i in taz.id.unique():
             temp = taz[taz.id == i]["edge_id"]
             x = list(temp)
@@ -200,4 +200,4 @@ if __name__ == "__main__":
         "taz.geojson",
     )
     t = taz.get_tazs("NO")
-    taz.write_tazs("tazes.taz.xml")
+    taz.write_tazs(output_path="tazes.taz.xml")

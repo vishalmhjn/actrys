@@ -1,6 +1,5 @@
 # coding=utf-8
 import pandas as pd
-import helpers.readClass as readClass
 import helpers.sumoClass as sumoClass
 from tqdm import tqdm
 import sys
