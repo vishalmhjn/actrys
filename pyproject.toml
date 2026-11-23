@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "actrys"
+version = "0.2.0"
+description = "Automated calibration of traffic simulations (SUMO) - demand (OD) and supply calibration with SPSA/W-SPSA and Bayesian optimization."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Vishal Mahajan" }]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26,<2",
+    "pandas>=2.1",
+    "scipy>=1.10",
+    "scikit-learn>=1.3",
+    "matplotlib>=3.8",
+    "seaborn>=0.12.2",
+    "bayesian-optimization>=1.4.2,<1.5",
+    "tqdm>=4.64",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pytest-cov", "ruff>=0.4"]
+# SUMO binaries + tools as a Python wheel (alternative to a system SUMO install)
+sumo = ["eclipse-sumo>=1.13"]
+# only needed by the one-off scenario preparation scripts in scripts/
+scripts = ["overpy", "requests", "geopandas", "geojson", "shapely"]
+
+[project.scripts]
+actrys = "actrys.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = ["sumo: tests that need the SUMO binaries (skipped if not installed)"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# reference implementations / equivalence tests use numpy's global RNG
+"tests/**" = ["NPY002"]
+# environment variable names are set by gen_network.sh
+"scripts/taz_processor.py" = ["SIM112"]

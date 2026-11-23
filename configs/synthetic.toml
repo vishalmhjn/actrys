@@ -1,0 +1,49 @@
+# Calibration on the analytical (static assignment) scenario - no SUMO needed.
+# Run with:  actrys synthetic configs/synthetic.toml
+output_dir = "../synthetic_sims"
+run_name = "taweighted_False_0.6_50_0.5_0.5_0_0_spsareps_1"
+estimator = "wmape"
+algorithm = "wspsa"          # "spsa" | "wspsa" | "pcspsa"
+od_noise_percent = 50
+od_bias = 0.6
+count_noise_percent = 0
+iterations = 30
+spsa_reps = 1
+momentum = 0.7
+bagging_runs = 10
+plot = true
+# seed = 42
+
+[scenario]
+num_zones = 50               # -> 2500 OD pairs
+num_detectors = 500
+interval_hours = 1.0
+start_hour = 7
+end_hour = 10
+od_distribution = "beta"     # or "uniform" (between lower/upper_limit_od)
+network_correlation = 0.2
+
+[weights]
+counts = 0.5
+od = 0.5
+speed = 0.0
+
+[gains]
+a = 3
+c = 0.01
+# alpha=0.7, gamma=0.01 suit W-SPSA; for SPSA / PC-SPSA the usual
+# choice is alpha=0.602, gamma=0.101
+alpha = 0.7
+gamma = 0.01
+
+[bias_correction]
+enabled = false
+method = "weighted"
+only = false
+
+[autotune]
+enabled = false
+n_init = 50
+n_iter = 100
+log_a_bounds = [-3.0, 4.0]
+log_c_bounds = [-2.0, 1.0]
