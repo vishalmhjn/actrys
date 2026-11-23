@@ -1,0 +1,14 @@
+# SUMO calibration of the Munich example against (dummy) real-world measurements.
+# Run with:  actrys sumo configs/munich_real_data.toml
+estimator = "wmape"
+n_sequential = 1
+
+[scenario]
+directory = "../munich"
+run_name = "real_data"
+
+[data]
+synthetic_counts = false
+real_counts = "../munich/sample_real_world_data/dummy_counts_data.csv"
+real_speeds = "../munich/sample_real_world_data/dummy_speed_data.csv"
+matchable_detectors = "../munich/sample_real_world_data/matchable_detectors.csv"

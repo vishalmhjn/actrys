@@ -1,202 +1,274 @@
-# actrys (Automated Calibration for Traffic Simulations)
-
-[![Build Status](https://github.com/vishalmhjn/actrys/actions/workflows/main.yml/badge.svg?branch=main&event=push)](https://github.com/vishalmhjn/actrys/actions/workflows/main.yml)
-
-**actrys** is a Python-based platform designed for calibrating traffic simulations in SUMO (Simulation of Urban Mobility).
+<h1 align="center">actrys</h1>
 
 <p align="center">
-  <img src="resources/munich_traffic_flows.gif" alt="Traffic Visualization" width="450"/>
+  <strong>Automated calibration of large-scale traffic simulations</strong>
 </p>
 
 <p align="center">
-  <img src="resources/munich_network_speeds.gif" alt="Traffic Visualization" width="500"/>
+  <a href="https://github.com/vishalmhjn/actrys/actions/workflows/main.yml"><img src="https://github.com/vishalmhjn/actrys/actions/workflows/main.yml/badge.svg?branch=main" alt="Build status"></a>
+  <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue" alt="Python 3.11 | 3.12">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT licence"></a>
 </p>
-
-## 1. Overview
-
-This repository includes code for:
-
-- **Input/Output Interfaces**: To interact with SUMO, initialize and simulate scenarios, and collect output data.
-- **Calibration Components**:
-  - Optimization Strategies: SPSA, W-SPSA, Bayesian optimization.
-  - Goodness-of-Fit Criteria.
-- **Assignment Matrix Extraction**: Based on the simulated routes.
-- **Synthetic Simulator**: For prototyping with static traffic assignment.
-- **Utilities**: For preparing and processing SUMO input files, such as network downloading, trip filtering, adding detectors, and file format conversion.
-- **Plotting Tools**.
-
-## 2. Framework
-
-The platform follows a step-wise approach for sequential calibration of:
-
-- Demand parameters or Origin-Destination (OD) flows.
-- Supply parameters for mesoscopic simulations.
-
-To achieve this, the following process is followed:
-
-1. **Bias-Correction in OD Matrices**: Using a one-shot heuristic.
-2. **Bayesian Optimization**: Fine-tuning SPSA parameters using an analytical or static assignment matrix approximated from the simulator.
-3. **W-SPSA with Ensembling Techniques**: Including cold and warm restarts.
-4. **Supply Calibration** using Bayesian optimization.
-
-Currently, the platform can handle link-based Measures of Performance (MOP) such as link traffic counts and link speeds in the calibration process.
-
-This platform can calibrate two types of scenarios:
-
-- **Analytical or Static Simulator**: Used for prototyping, this scenario generates a random assignment matrix controlled by different parameters to map OD flows to link counts. No external data files are needed to run this scenario, except for a few parameters that control the scenario properties.
-
-- **Black-box or Dynamic Simulator (SUMO)**: This scenario includes:
-  - Creation of trips from time-dependent OD matrices.
-  - Routing for trips based on the route-choice algorithm.
-  - Dynamic network conditions, traffic propagation, and re-routing.
-
-## 3. Architecture
 
 <p align="center">
-<img src="resources/architecture.png" alt="architecture" width="500" align="center"/>
+  <img src="resources/munich_traffic_flows.gif" alt="Simulated traffic flows in Munich" width="430"/>
+  &nbsp;
+  <img src="resources/munich_network_speeds.gif" alt="Simulated network speeds in Munich" width="430"/>
 </p>
 
-## Input Preparation for SUMO Simulations
+**actrys** calibrates [SUMO](https://eclipse.dev/sumo/) traffic simulations
+against link measurements. Given observed traffic counts and speeds, it
+estimates the **time-dependent origin–destination (OD) demand** and the
+**mesoscopic supply parameters** that make the simulation reproduce them.
 
-**Black-box or dynamic simulator** scenarios require several formatted inputs. Example files are provided in the [munich](munich/) directory:
+## Highlights
 
-- **Network File**: A standard SUMO network [(Example)](munich/network.net.xml).
-- **OD Matrices**: Time-dependent specification of trips between Origin-Destination zones [(Example)](munich/demand/).
-- **Link Sensors**: A file specifying the properties (location and data collection frequency) of edge or link sensors [(Example)](munich/additional.add.xml).
-- **Traffic Analysis Zones**: Mapping between origin-destination zones and network edges [(Example)](munich/tazes.taz.xml).
+- **End-to-end pipeline.** Bias correction, Bayesian tuning of the optimizer,
+  W-SPSA with ensembling, and supply calibration, run in sequential rounds.
+- **Simulator in or out of the loop.** Calibrate with SUMO in the loop, or on
+  an assignment matrix derived from its routes for fast iterations.
+- **Scales to city networks.** Sparse W-SPSA weight matrices and vectorised
+  assignment-matrix construction.
+- **Prototyping without SUMO.** An analytical (static assignment) scenario for
+  studying the algorithms in minutes.
+- **Configuration as code.** Typed, validated TOML configurations, a
+  command-line interface and a Python API.
 
-## 4. Custom Synthetic Scenario with SUMO
+## Contents
 
-For a custom synthetic scenario, the following process is followed:
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Methodology](#methodology)
+- [Scenarios](#scenarios)
+- [Input data](#input-data)
+- [Configuration](#configuration)
+- [Outputs](#outputs)
+- [Project structure](#project-structure)
+- [Scenario-preparation tools](#scenario-preparation-tools)
+- [Development](#development)
+- [Citation](#citation)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
 
-1. A true demand is simulated to obtain "_real sensor measurements_."
-2. Subsequently, the true demand is perturbed by the addition of bias and variance.
-3. Perturbed demand is simulated, and corresponding simulation sensor measurements are compared with the "_real sensor measurements_." Based on the discrepancy between real and simulated data, the calibrator aims to recover the true demand matrix.
+## Installation
 
-## 5. Custom Real Scenario with SUMO
+Requires **Python 3.11 or newer**.
 
-For a real scenario, you can use real sensor data such as link volumes or link speeds. These measurements could be obtained from open data sources, traffic operator websites, or city open data portals. In this case, additional input is needed to use the observed counts as an input:
+```sh
+git clone https://github.com/vishalmhjn/actrys.git
+cd actrys
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[sumo]"
+```
 
-1. **Observed Sensor Data**: Such as link volumes or link speeds to be used as Measures of Performance (MOP) [(Example)](munich/realdata.csv).
+The `sumo` extra installs SUMO from the `eclipse-sumo` wheel. To use an
+existing installation instead, run `pip install -e .`, set `SUMO_HOME` and put
+the SUMO binaries on your `PATH`. actrys has been tested with SUMO 1.13 and 1.28.
 
-2. In a real scenario, the true demand is not known. What you have is an initial demand matrix, which is simulated. Corresponding simulation sensor measurements are compared with the real sensor measurements. Based on the discrepancy between real and simulated data, the calibrator aims to recover the true demand matrix.
+| Extra | Adds |
+| --- | --- |
+| `sumo` | SUMO binaries and tools |
+| `dev` | pytest, ruff |
+| `scripts` | Dependencies of the scenario-preparation tools (geopandas, overpy, ...) |
 
-## 6. Requirements
+## Quick start
 
-The framework has been tested on **SUMO 1.13.0** and **Python 3.8** on both Ubuntu 18.04 and macOS 13.2. To set up your environment, follow these steps:
+```sh
+# Analytical scenario: no SUMO required, runs in minutes
+actrys synthetic configs/synthetic.toml
 
-1. Create a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-virtualenv) using the following commands:
+# SUMO calibration of the Munich example with synthetic counts
+actrys sumo configs/munich.toml
 
-   ```sh
-   cd
-   python3 -m venv actrys
-   ```
+# A shorter, reproducible trial run
+actrys sumo configs/munich.toml --set demand.bagging_runs=1 --set n_sequential=1 --seed 42
+```
 
-2. Then activate the virtual environment using
+Results are written to `munich/<run_name>/` (SUMO) or `synthetic_sims/<run_name>/` (analytical).
 
-   ```sh
-   source ~/actrys/bin/activate
-   ```
+## Methodology
 
-3. Make the parent folder of the repository your current directory:
+Calibration runs in `n_sequential` rounds. Each round calibrates demand first,
+then supply:
 
-   ```sh
-   cd path/to/your/github/repository/actrys
-   ```
+```mermaid
+flowchart LR
+    A[Prior OD demand] --> B[Simulate and extract<br/>assignment matrix]
+    B --> C[Bias correction]
+    C --> D[Bayesian tuning<br/>of SPSA gains]
+    D --> E[W-SPSA restarts<br/>averaged]
+    E --> F[Supply calibration<br/>Bayesian optimization]
+    F -->|next round| B
+```
 
-4. Install the Python [requirements](requirements.txt) using:
-   ```sh
-   pip install -r requirements.txt
-   ```
+1. **Assignment matrix.** The prior demand is simulated. The simulated routes
+   give the share of each OD pair observed by each detector.
+2. **Bias correction.** A one-shot heuristic rescales the prior demand,
+   globally (`naive`) or per OD pair (`weighted`), and sets the search bounds.
+3. **Gain tuning (optional).** Bayesian optimization selects the SPSA step
+   sizes `a` and `c`, cheaply, on the assignment-matrix approximation.
+4. **Demand estimation.** Weighted SPSA (W-SPSA) restricts each gradient
+   component to the measurements its OD pair affects. Several restarts
+   (`bagging_runs`, cold or warm) are averaged. Each restart can run with SUMO
+   in the loop, on the assignment matrix, or both.
+5. **Supply calibration (optional).** Bayesian optimization of the rerouting
+   and mesoscopic junction-penalty parameters.
 
-## 7. Execution
+The objective is a weighted sum of three goodness-of-fit terms (counts, speeds,
+and deviation from the prior demand), with weights set in `[weights]`. The
+available measures are RMSN, RMSE, SMAPE, RMSP, WMAPE and a composite of RMSN
+and SMAPE.
 
-### I. Running Analytical or Static Simulation Scenarios
+## Scenarios
 
-1. Set the current working directory to [src/wrapper](src/wrapper/) in the Command Line Interface (CLI):
+| Scenario | Command | Description |
+| --- | --- | --- |
+| **Analytical** | `actrys synthetic` | A random static assignment maps OD flows to counts; speeds follow a fundamental diagram. Needs no input files. |
+| **SUMO with synthetic counts** | `actrys sumo` (`data.synthetic_counts = true`) | The scenario demand is simulated to produce ground-truth counts and speeds. The prior is that demand with added bias and noise; the calibration aims to recover the ground truth. |
+| **SUMO with real counts** | `actrys sumo` (`data.synthetic_counts = false`) | Calibrates against field measurements, with the scenario demand as the prior. See [`configs/munich_real_data.toml`](configs/munich_real_data.toml). |
 
-   ```sh
-   cd src/wrapper
-   ```
+## Input data
 
-2. The Python file serving as the overall wrapper is [run_analytical_sim.py](src/wrapper/run_analytical_sim.py), which calls the [synthetic_calibrator.py](src/core/synthetic_calibrator.py).
+A SUMO scenario is a directory such as [`munich/`](munich/):
 
-3. The scenario parameters such as number of OD pairs and detectors can be changed in the [synthetic_calibrator.py](src/core/synthetic_calibrator.py) directly.
+| File | Description |
+| --- | --- |
+| `network.net.xml` | SUMO road network |
+| `tazes.taz.xml` | Traffic analysis zones (zone → network edges) |
+| `additional.add.xml` | `e1Detector` / `inductionLoop` sensors and `edgeData` outputs |
+| `demand/OD_<from>_<to>.txt` | One OD matrix per interval in SUMO's O-format, e.g. `OD_7.0_8.0.txt` |
+| `demand/od_list.txt` | The modelled OD pairs (`o d t`) |
 
-4. Run the following command in the terminal:
+Field measurements are CSV files (examples in
+[`munich/sample_real_world_data/`](munich/sample_real_world_data/)):
 
-   ```sh
-   python runAnalyticalSim.py
-   ```
+| File | Columns |
+| --- | --- |
+| Counts | `det_id, count, hour` |
+| Speeds | `det_id, speed, hour` |
+| Matchable detectors | `det_id` |
 
-5. Outputs are stored in [synthetic_sims](synthetic_sims/) folder
+`det_id` is the SUMO edge id and `hour` the interval start in seconds.
 
-### II. Running Black-box or Dynamic Simulation Scenarios with Synthetic Counts
+## Configuration
 
-1. First, specify the paths in [paths](src/core/paths.py) and [parameters](src/core/params.py). Please note that the platform has not been tested on Windows OS, so paths may need to be adapted.
+Runs are defined in TOML files. The examples in [`configs/`](configs/)
+document every option. Relative paths are resolved against the configuration
+file, and unknown or misspelled keys are rejected.
 
-2. Set the path to the SUMO folder with the SUMO_HOME variable. For example, on macOS, it is generally stored at the following path for SUMO version 1.10.0. More details can be found in this [link](https://sumo.dlr.de/docs/Basics/Basic_Computer_Skills.html#sumo_home) for more details.
+| Section | Purpose |
+| --- | --- |
+| `[scenario]` | Scenario directory, file names and output folder (`run_name`) |
+| `[time]` | Analysis period, warm-up and cool-down, interval length |
+| `[data]` | Synthetic or field measurements, prior bias and noise |
+| `[weights]`, `estimator` | Objective weights and goodness-of-fit measure |
+| `[demand]` | Algorithm, in/out-of-loop iterations, restarts, momentum |
+| `[demand.gains]`, `[demand.out_of_loop_gains]` | SPSA gain sequences |
+| `[demand.bias_correction]`, `[demand.autotune]` | Bias correction and Bayesian gain tuning |
+| `[supply]`, `[initial_supply]` | Supply-calibration budget, bounds and initial values |
+| `[simulation]` | Rerouting threads, parallel perturbations, `meso` / `micro` aggregation |
 
-   ```sh
-   export SUMO_HOME="/usr/local/Cellar/sumo/1.10.0/share/sumo"
-   ```
+Any value can be overridden on the command line:
 
-3. Change the current working directory to [src/wrapper](src/wrapper/) in the command line interface:
+```sh
+actrys sumo configs/munich.toml --set weights.speed=0.1 --set demand.in_loop_iterations=10
+```
 
-   ```sh
-   cd src/wrapper
-   ```
+Set `seed` in the configuration, or pass `--seed`, for reproducible runs.
 
-4. The Python file serving as the overall wrapper is [run_sim.py](src/wrapper/run_sim.py), which calls the secondary wrapper [wrapper.sh](src/wrapper/wrapper.sh). Before running the simulation for synthetic counts, set the variable **synthetic_counts** as True in [run_sim.py](src/wrapper/run_sim.py).
+### Python API
 
-5. Run the following command in the terminal to run the simulation (e.g., for Munich):
+```python
+from actrys.config import SumoCalibrationConfig, load_config
+from actrys.calibration.sumo_pipeline import SumoCalibration
 
-   ```sh
-   python runSim.py munich
-   ```
+config = load_config(SumoCalibrationConfig, "configs/munich.toml")
+results = SumoCalibration(config).run()
+```
 
-6. Outputs are stored in [munich](munich/) folder
+`run()` returns the loss history and the calibrated parameters. The same
+values are written to `results_<timestamp>.json`.
 
-### III. Following procedure for running <b>Black-box or dynamic simulation </b> scenarios with real-world counts:
+## Outputs
 
-1. Specify the paths to real data in [wrapper.sh](src/wrapper/wrapper.sh). For example:
+A SUMO run writes the following to `<scenario>/<run_name>/`:
 
-   ```sh
-   export FILE_MATCH_DETECTORS=../../$SCENARIO/ sample_real_world_data/matchable_detectors.csv
-   export FILE_REAL_COUNTS=../../$SCENARIO/sample_real_world_data/dummy_counts_data.csv
-   export FILE_REAL_SPEEDS=../../$SCENARIO/sample_real_world_data/dummy_speed_data.csv
-   ```
+| File | Content |
+| --- | --- |
+| `results_<timestamp>.json` | Loss history, run settings, calibrated supply parameters and tuned gains |
+| `mean_<round>_<restarts>_{od,counts,speeds}.csv` | Ground truth or observations, initial and calibrated values for each round |
+| `<restart>_od.csv` | Best OD vector of each restart |
+| `OD_best_*.txt`, `OD_mean_*.txt` | Best and averaged demand in O-format, ready to simulate |
+| `best_out.csv`, `best_edge_data_*` | Detector and edge outputs of the best simulation |
+| `logs_spsa_tune.json`, `logs_supply.json` | Bayesian-optimization logs, reused when a run is restarted |
+| `img_*.png` | Observed-versus-simulated scatter plots and loss curves |
 
-2. Specify the detector identifier in the [params](src/core/params.py) as per the [detector file](munich/additional.add.xml) (_<e1Detector id=""_).
+Analytical runs write the equivalent files to `<output_dir>/<run_name>/`.
 
-   ```
-   additonal_identifier = "e1Detector_id"
-   output_identifier = "interval_id"
-   ```
+## Project structure
 
-3. Before running the simulation scenario, set the variable **synthetic_counts** as False in [run_sim.py](src/wrapper/run_sim.py). This is because, we want to use the real data in this case.
+```
+actrys/
+├── configs/                 Example run configurations
+├── scripts/                 Scenario-preparation tools
+├── src/actrys/
+│   ├── config.py            Typed configuration and TOML loading
+│   ├── metrics.py           Goodness-of-fit measures
+│   ├── optim/               SPSA, W-SPSA and PC-SPSA
+│   ├── synthetic/           Analytical scenario generator
+│   ├── sumo/                SUMO I/O, tool chain and assignment matrices
+│   ├── calibration/         Objectives, bias correction, tuning and pipelines
+│   ├── plotting.py          Diagnostic plots
+│   └── cli.py               Command-line interface
+└── tests/                   Unit and end-to-end tests
+```
 
-4. Finally, run the following command in the terminal to run the simulation for the **Munich** scenario:
+<p align="center">
+  <img src="resources/architecture.png" alt="actrys architecture" width="520"/>
+</p>
 
-   ```sh
-   python runSim.py munich
-   ```
+## Scenario-preparation tools
 
-## 8. Other SUMO-related tasks (optional):
-### Network download:
-Download raw OSM data and convert it into SUMO network using netconvert. Specify the extent of the network in the form of bounding box in [run_download.sh](src/helpers/run_download.sh). Specify the correct parameters for network building in the same file.
-   ```sh
-   cd src/helpers
-   sh run_download.sh
-   ```
+Stand-alone utilities in [`scripts/`](scripts/) for building new scenarios.
+Run any of them with `--help` for usage. Some need the `scripts` extra.
 
-## 9. Citation
+| Tool | Purpose |
+| --- | --- |
+| `run_download.sh`, `download_network.py` | Download OpenStreetMap roads for a bounding box and build a SUMO network |
+| `generate_additional.py` | Create a detector file from a detector-to-edge mapping |
+| `shp_to_taz.py`, `sumo_network.py` | Create traffic analysis zones from zone polygons |
+| `recursive_taz_filter.py` | Remove zone edges that make trips unroutable |
+| `taz_processor.py`, `gen_network.sh` | Keep the zones at the network boundary |
+| `apriori_demand.py` | Build time-dependent demand from a static OD table |
+| `sumo_to_geojson.py`, `route_prevalence.py`, `detector_errors.py` | Export the network, edge usage and per-detector errors for GIS |
+| `visualizer.sh` | Plot network speeds and flows |
 
-If you use these codes in your work, kindly cite the following preprint:
+## Development
 
-Mahajan, V., Cantelmo, G., and Antoniou, C, Towards automated calibration of large-scale traffic simulations, [preprint_v2](https://mediatum.ub.tum.de/doc/1701188/1701188.pdf), 2023.
+```sh
+pip install -e ".[dev,sumo]"
+make test        # full test suite, incl. end-to-end SUMO runs on a small grid
+make test-fast   # without the SUMO tests
+make lint        # static checks (ruff)
+make format      # auto-format
+```
 
-## 10. Acknowledgements
+The SUMO tests are skipped when no SUMO installation is found.
 
-1. SUMO: https://github.com/eclipse/sumo
-2. Noisyopt library: https://github.com/andim/noisyopt
+## Citation
+
+If you use actrys in your research, please cite:
+
+> Mahajan, V., Cantelmo, G., and Antoniou, C. (2023).
+> *Towards automated calibration of large-scale traffic simulations*.
+> [Preprint](https://mediatum.ub.tum.de/doc/1701188/1701188.pdf).
+
+## Acknowledgements
+
+- [Eclipse SUMO](https://github.com/eclipse/sumo), the simulation platform.
+- [noisyopt](https://github.com/andim/noisyopt) by Andreas Mayer, the basis of
+  the SPSA implementation.
+
+## License
+
+Released under the [MIT License](LICENSE).

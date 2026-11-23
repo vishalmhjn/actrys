@@ -1,10 +1,23 @@
+.PHONY: install install-sumo lint format test test-fast
+
 install:
-	pip install --upgrade pip &&\
-		pip install -r requirements.txt
+	pip install --upgrade pip && pip install -e ".[dev]"
+
+# SUMO binaries/tools as a wheel (alternative to a system install)
+install-sumo:
+	pip install -e ".[dev,sumo]"
 
 lint:
-	pylint --disable=R,C src/wrapper/run_analytical_sim.py
-	pylint --disable=R,C src/wrapper/run_sim.py
+	ruff check src tests scripts
+	ruff format --check src tests
 
 format:
-	black *.py
+	ruff check --fix src tests scripts
+	ruff format src tests
+
+test:
+	pytest
+
+# skip the end-to-end SUMO runs
+test-fast:
+	pytest -m "not sumo"

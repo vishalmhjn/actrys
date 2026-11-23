@@ -1,17 +1,20 @@
-name: linux
-on: [push]
+name: tests
+on: [push, pull_request]
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.12
-    - name: Install dependencies
-      run: |
-        make install
-    - name: Lint
-      run: |
-        make lint
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install (with SUMO wheel)
+        run: make install-sumo
+      - name: Lint
+        run: make lint
+      - name: Test
+        run: make test

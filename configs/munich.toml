@@ -1,0 +1,101 @@
+# SUMO demand calibration of the Munich example with synthetic counts.
+# Relative paths are resolved against this file's directory.
+# Run with:  actrys sumo configs/munich.toml
+estimator = "wmape"
+n_sequential = 3            # sequential demand -> supply rounds
+simulate_base_scenario = true
+plot = true
+# seed = 42                 # set for reproducible runs
+
+[scenario]
+directory = "../munich"
+run_name = "free_3600_1_10_0.9_0.1_0_0_sequential_naive_2a"
+network = "network.net.xml"
+zones = "tazes.taz.xml"
+detectors = "additional.add.xml"   # e1Detector / inductionLoop elements + edgeData
+demand_dir = "demand"
+od_prefix = "OD"                   # demand/OD_<from>_<to>.txt
+od_list = "od_list.txt"
+
+[time]
+start_hour = 7
+end_hour = 9
+warm_up_hours = 2
+cool_down_hours = 0
+interval_seconds = 3600
+
+[data]
+synthetic_counts = true     # simulate the scenario demand to create "observed" counts/speeds
+od_noise_percent = 10       # the prior is the true OD with this noise ...
+od_bias = 1.0               # ... and this multiplicative bias
+count_noise_percent = 0
+# with synthetic_counts = false:
+# real_counts = "../munich/sample_real_world_data/dummy_counts_data.csv"
+# real_speeds = "../munich/sample_real_world_data/dummy_speed_data.csv"
+# matchable_detectors = "../munich/sample_real_world_data/matchable_detectors.csv"
+
+[weights]
+counts = 0.9
+od = 0.1
+speed = 0.0
+
+[demand]
+enabled = true
+algorithm = "wspsa"
+spsa_reps = 1
+momentum = 0.3
+sim_in_loop = true
+sim_out_loop = false
+outer_iterations = 1
+in_loop_iterations = 5
+out_of_loop_iterations = 1
+bagging_runs = 3
+warm_start = false
+exploration_noise_percent = 10
+learning_decay_factor = 1.05
+wspsa_threshold = 0.01
+
+[demand.gains]              # W-SPSA with the simulator in the loop
+a = 0.1
+c = 0.1
+alpha = 0.602
+gamma = 0.101
+
+[demand.out_of_loop_gains]  # W-SPSA on the assignment-matrix approximation
+a = 1.0
+c = 1.0
+alpha = 0.7
+gamma = 0.01
+
+[demand.bias_correction]
+enabled = true
+method = "naive"            # or "weighted"
+only = false
+
+[demand.autotune]           # Bayesian tuning of the SPSA gains
+enabled = true
+n_init = 30
+n_iter = 30
+log_a_bounds = [-7.0, -1.0]
+log_c_bounds = [-2.0, 1.0]
+iterations = 50
+
+[supply]
+enabled = false
+n_init = 50
+n_iter = 50
+
+[initial_supply]
+rerouting_prob = 0.9
+tls_tt_penalty = 6.0
+meso_minor_penalty = 10
+rerouting_period = 30
+rerouting_adaptation = 5
+rerouting_adaptation_steps = 157
+meso_tls_flow_penalty = 0.9
+priority_factor = 0.01
+
+[simulation]
+routing_threads = 16
+parallel_perturbations = true
+sim_type = "meso"

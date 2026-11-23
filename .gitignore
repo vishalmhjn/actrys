@@ -3,6 +3,16 @@ __pycache__/
 .DS_Store
 !*.gitkeep
 
+# environments / build artefacts
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# scenario inputs and run outputs
 munich/
 siouxfalls/
 synthetic_sims/
